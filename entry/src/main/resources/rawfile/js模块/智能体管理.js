@@ -341,9 +341,10 @@ window.获取智能体权限 = async function(智能体ID) {
     const 配置路径 = `agents/${智能体ID}/agent.json`;
     const 内容 = await 存储.读文件(配置路径);
     const 配置 = JSON.parse(内容);
-    return 配置.memo_access || { mode: 'all', folders: [] };
+    return 配置.memo_access || { mode: 'none', folders: [] };
   } catch (e) {
-    return { mode: 'all', folders: [] };
+    // 获取失败/无配置 → 默认无权限
+    return { mode: 'none', folders: [] };
   }
 };
 
@@ -587,3 +588,7 @@ window.删除智能体 = async function(智能体ID) {
     return false;
   }
 };
+
+// 暴露内部函数给智能体权限向导.js
+window._原始创建新智能体 = 创建新智能体;
+window._原始删除智能体 = window.删除智能体;

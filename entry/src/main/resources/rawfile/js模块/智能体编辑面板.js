@@ -644,9 +644,9 @@ function 弹出编辑框(字段, 旧值) {
           <button class="智能体编辑-编辑弹窗-关闭">✕</button>
         </div>
         <textarea class="智能体编辑-编辑弹窗-文本域" spellcheck="false">${escHtml(旧值)}</textarea>
-        <div class="智能体编辑-编辑弹窗-底部">
-          <button class="智能体编辑-编辑弹窗-取消">取消</button>
-          <button class="智能体编辑-编辑弹窗-确认">保存</button>
+        <div class="智能体编辑-编辑弹窗-底部" style="display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:14px 18px;border-top:2px solid #eee;flex-shrink:0;min-height:52px;background:var(--内容底色,#fff)">
+          <button class="智能体编辑-编辑弹窗-取消" style="background:#eee;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;color:#333">取消</button>
+          <button class="智能体编辑-编辑弹窗-确认" style="background:#4A90D9;border:none;padding:8px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;color:#fff;font-weight:600;white-space:nowrap">保存</button>
         </div>
       </div>
     `;
@@ -703,6 +703,17 @@ async function 保存配置(智能体ID, 新配置) {
   }
 
   if (window.加载智能体) await window.加载智能体(智能体ID);
+
+  // 更新智能体选择器按钮显示
+  if (新配置.name) {
+    const 按钮 = document.getElementById('智能体选择按钮');
+    if (按钮) {
+      const icon = 新配置.icon || '🤖';
+      if (智能体ID === (window.当前智能体ID?.() || 'default')) {
+        按钮.innerHTML = `${icon} ${新配置.name} ▼`;
+      }
+    }
+  }
 }
 
 async function 切换收藏(智能体ID, 收藏) {

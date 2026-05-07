@@ -4,17 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>私人AI助理 · 鸿蒙原生</title>
+  <!-- 鸿蒙 WebView rawfile 下 navigator.onLine 误判离线，强制返回 true -->
+  <script>
+    try { Object.defineProperty(navigator, 'onLine', { get: () => true }); } catch(e) {}
+  </script>
   <link rel="stylesheet" href="css/样式.css?v=20260430i">
   <link rel="stylesheet" href="css/智能体编辑面板-样式.css">
-  <!-- 鸿蒙rawfile无此文件，注释掉font-awesome -->
-  <!-- <link rel="stylesheet" href="assets/css/font-awesome.min.css"> -->
+  <link rel="stylesheet" href="assets/css/font-awesome.min.css">
   
-  <!-- 鸿蒙WebView navigator.onLine 可能默认false -->
-  <script>
-    // 强制设置为在线状态，避免离线提示条误判
-    Object.defineProperty(navigator, 'onLine', { configurable: true, get: function() { return true; } });
-  </script>
-
   <!-- 核心模块：存储适配器必须最先加载 -->
   <script src="js模块/存储适配器.js"></script>
   
@@ -61,6 +58,7 @@
   <script src="js模块/设置浮层.js?v=20260430i"></script>
   <script src="js模块/备忘录UI.js?v=20260423b"></script>
   <script src="js模块/智能体编辑面板.js?v=20260502b"></script>
+  <script src="js模块/智能体权限向导.js"></script>
   
   <!-- 最后加载初始化 -->
   <script src="js模块/初始化.js?v=20260430e"></script>
