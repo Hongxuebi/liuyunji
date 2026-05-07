@@ -2089,6 +2089,7 @@ body {
   font-size: 16px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y; /* 只允许纵向滚动，横向手势交给系统处理（鸿蒙返回） */
 }
 
 .标签选择页导航 {

@@ -590,6 +590,27 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
     文件夹下拉菜单.addEventListener('click', (e) => e.stopPropagation());
   }
   
+  // 暴露给鸿蒙返回手势
+  window.关闭文件夹下拉菜单 = function() {
+    if (文件夹下拉菜单) {
+      文件夹下拉菜单.classList.remove('显示');
+      // 清除打开时设置的inline styles，防止残留影响
+      文件夹下拉菜单.style.position = '';
+      文件夹下拉菜单.style.top = '';
+      文件夹下拉菜单.style.left = '';
+      文件夹下拉菜单.style.zIndex = '';
+      文件夹下拉菜单.style.background = '';
+      文件夹下拉菜单.style.border = '';
+      文件夹下拉菜单.style.borderRadius = '';
+      文件夹下拉菜单.style.boxShadow = '';
+      文件夹下拉菜单.style.width = '';
+      文件夹下拉菜单.style.padding = '';
+      文件夹下拉菜单.style.maxHeight = '';
+      文件夹下拉菜单.style.overflowY = '';
+    }
+  };
+  window.关闭全局浮动菜单 = function() { var m = document.getElementById('全局浮动菜单'); if (m) m.classList.remove('显示'); };
+
   // ===== 标签管理（微信风格独立页面） =====
   const 标签按钮 = document.getElementById('标签按钮');
   const 标签选择页 = document.getElementById('标签选择页');
@@ -799,6 +820,7 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
       // 点击空白区域关闭（只有点击页面背景才关闭，不是点击内部元素）
       if (e.target === 标签选择页) 关闭标签选择页();
     });
+    // 返回手势由CSS touch-action:pan-y + 鸿蒙onBackPress处理
   }
 
   // ===== 事件委托 =====
@@ -956,6 +978,9 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
     };
     setTimeout(() => document.addEventListener('click', 关闭), 0);
   }
+
+  // 暴露给鸿蒙返回手势
+  window.关闭格式菜单 = function() { if (格式菜单) { 格式菜单.remove(); 格式菜单 = null; } };
 
   // ========== 待办事项 ==========
   function 插入待办项(编辑区, 初始文本 = null, 截止时间 = null) {
@@ -1673,6 +1698,9 @@ ${deadlineDisplay}`;
     setTimeout(() => document.addEventListener('click', 关闭), 0);
   }
 
+  // 暴露给鸿蒙返回手势
+  window.关闭AI菜单 = function() { if (AI菜单) { AI菜单.remove(); AI菜单 = null; } };
+
   // ========== 执行AI辅助编辑 ==========
   async function 执行AI辅助编辑(操作类型, 编辑区) {
     if (!AI保存的选区) {
@@ -1807,6 +1835,9 @@ ${deadlineDisplay}`;
       }
     });
 
+    // 暴露给鸿蒙返回手势
+    window.隐藏选区工具条 = function() { 选区工具条.style.display = 'none'; };
+
     // 工具条按钮事件委托
     选区工具条.addEventListener('click', (e) => {
       const 按钮 = e.target.closest('[data-action]');
@@ -1891,6 +1922,9 @@ ${deadlineDisplay}`;
     抽屉保存的选区 = null;
     缓存的字号元素 = null;
   }
+
+  // 暴露给鸿蒙返回手势
+  window.隐藏字号抽屉 = 隐藏字号抽屉;
 
   if (关闭按钮) {
     关闭按钮.addEventListener('click', () => {

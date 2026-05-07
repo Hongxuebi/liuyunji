@@ -150,10 +150,16 @@ function 触摸移动(e) {
     }
   }
   
+  // ★ 右滑 → 不触发任何操作栏，直接标记竖滚退出
+  if (deltaX > 0) {
+    已判定为竖滚 = true;
+    return;
+  }
+  
   // 横滑但位移还太小（<30px），等继续滑
   if (Math.abs(deltaX) < 滑动阈值) return;
   
-  // 确认是横滑，开始视觉反馈
+  // 确认是横滑（左滑），开始视觉反馈
   是否发生了滑动 = true;
   当前滑动X = deltaX;
   let translateX = 当前滑动X;
@@ -177,6 +183,8 @@ function 桌面鼠标移动(e) {
   const deltaX = e.clientX - 滑动起始X;
   if (Math.abs(deltaX) < 5) return;
   if (Math.abs(deltaX) > 滑动阈值) 是否发生了滑动 = true;
+  // ★ 右滑 → 不触发任何操作栏
+  if (deltaX > 0) return;
   当前滑动X = deltaX;
   let translateX = 当前滑动X;
   if (translateX > 0) translateX = 0;
