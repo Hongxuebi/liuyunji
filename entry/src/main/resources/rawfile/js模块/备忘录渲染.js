@@ -862,6 +862,8 @@ function 渲染备忘录列表() {
         if (e.target.closest('.操作栏按钮')) return;
         const 容器 = 卡片.closest('.备忘录卡片滑动容器');
         if (!容器) return;
+        // ★ 任何卡片处于展开状态时，点击只收起，不进入编辑
+        if (window._当前展开的卡片 && window._当前展开的卡片()) { window._收起所有卡片(); return; }
         const id = parseInt(容器.dataset.id);
         if (当前筛选 === 'deleted') return;
         window.打开编辑页面(id);
@@ -886,6 +888,8 @@ function 渲染备忘录列表() {
           // 回收站中的备忘录点击不进入编辑，而是显示恢复选项
           return;
         }
+        // ★ 任何卡片处于展开状态时，点击只收起，不进入编辑
+        if (window._当前展开的卡片 && window._当前展开的卡片()) { window._收起所有卡片(); return; }
         window.打开编辑页面(id);
       });
     });
