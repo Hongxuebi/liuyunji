@@ -1,0 +1,15 @@
+# Build
+entry/build/
+.hvigor/
+hvigor/outputs/
+oh_modules/
+*.hprof
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# System
+.DS_Store
+Thumbs.db

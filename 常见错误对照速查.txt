@@ -1,0 +1,85 @@
+# 常见错误对照速查表（流云记项目）
+
+> 最后更新：2026-05-07
+> 用途：流云记开发过程中快速排查问题
+
+---
+
+## 一、WebView 容器（鸿蒙适配）
+
+| 编号 | 问题 | 现象 | 原因 | 解决方案 |
+|------|------|------|------|----------|
+| WV-01 | 网络已断开提示 | WebView 显示"网络连接已断开" | 鸿蒙 WebView 中 `navigator.onLine` 默认为 `false`，离线检测误判 | 在 index.html 注入 `Object.defineProperty(navigator, 'onLine', { get: () => true })` |
+| WV-02 | font-awesome 图标不显示 | 图标处显示空白/乱码 | `$rawfile()` 加载 CSS 时找不到 `assets/css/font-awesome.min.css` | 注释掉该 CSS 引用；或把文件拷入 `rawfile/` |
+| WV-03 | JSBridge undefined | `window.jsBridge` 调用失败 | WebView 未完全加载时 JS 即调用 bridge | 前端轮询等待（最多 20 次 × 100ms），超时降级 |
+| WV-04 | WebView 内存泄漏 | 多次开关后卡顿 | `registerJavaScriptProxy` 未在 `onPageDestroy` 注销 | 统一在页面销毁时清理注册 |
+| WV-05 | IndexedDB 跨 origin 不共享 | 手机 WebView / file:// / http:// 数据各自隔离 | IndexedDB 按 origin 隔离存储 | 统一开发测试用同一方式；上线后 WebView 只有 rawfile:// 一个 origin |
+| WV-06 | navigator.onLine 定义冲突 | 不生效或报错 | 鸿蒙 SDK 可能已经定义了该属性，`defineProperty` 报 `Cannot redefine` | 加 `configurable: true` 或 try-catch 包裹 |
+
+---
+
+## 二、网络与 API 调用
+
+| 编号 | 问题 | 现象 | 原因 | 解决方案 |
+|------|------|------|------|----------|
+| NW-01 | 百度搜索跨域失败 | 手机 WebView 搜索报跨域错 | 之前走的 `localhost:3778/proxy/baidu-search` 只在电脑端可用 | 改为直连 `https://qianfan.baidubce.com/v2/ai_search/web_search` |
+| NW-02 | fetch 超时不中断 | 网络慢时卡死数十秒无反馈 | `fetch` 无 `AbortController` 超时 | 非流式加 120s 超时，流式加 5min 超时 |
+| NW-03 | 网络权限缺失 | `fetch` 请求直接失败 | `module.json5` 未声明 `ohos.permission.INTERNET` | 在 `requestPermissions` 中添加（已处理） |
+| NW-04 | DeepSeek API 不通 | AI 返回为空或报错 | 手机 vs Mac 网络环境不同，防火墙/代理影响 | 检查手机是否能直连 api.deepseek.com |
+
+---
+
+## 三、爱助手迁移相关
+
+| 编号 | 问题 | 现象 | 原因 | 解决方案 |
+|------|------|------|------|----------|
+| MV-01 | JS 文件 404 | 清单页空白，控制台 404 | HTML 中 `src="js模块/xxx.js"` 路径不对应 | 保持 love-helper 原始目录结构，不要改动 rawfile 内部路径 |
+| MV-02 | 恢复备份报错 | 备份文件兼容性 | 不同设备/WebView 配置差异 | 统一用 JSON 格式备份，避免跨平台编码问题 |
+| MV-03 | 本地调试不显示手机数据 | 手机有数据，电脑看不到 | IndexedDB 不跨 origin 同步 | 用导出功能把数据导出为 JSON，再导入到另一设备 |
+
+---
+
+## 四、鸿蒙 ArkTS 编译
+
+| 编号 | 问题 | 现象 | 原因 | 解决方案 |
+|------|------|------|------|----------|
+| AK-01 | ConfigurationConstant 找不到 | 编译报错 `Cannot find module` | API 15 导入路径变更 | `import { ConfigurationConstant } from '@kit.AbilityKit';` |
+| AK-02 | FileAccess 属性名 | `.allowFileAccess(true)` 编译报错 | API 15 改名为 `.fileAccess()` | 查当前 API 版本的 Web 属性名，不要照旧文档写 |
+| AK-03 | 对象字面量必标注类型 | `return {a:1}` 报错 | ArkTS 要求类型标注 | 加 `as Interface` 或显式类型声明 |
+| AK-04 | var 被禁 | `var x = 1` 报错 | ArkTS 禁止 var | 改用 let/const |
+| AK-05 | throw 类型限制 | `throw new BusinessError(...)` 编译报错 | throw 必须用 Error 类型 | `throw new Error(e.message)` 或只 log 不抛 |
+
+---
+
+## 五、TTS 语音合成（后续集成参考）
+
+爱助手项目经验（详见 love-helper MEMORY.md），流云记集成时参考：
+
+| 编号 | 问题 | 现象 | 原因 | 解决方案 |
+|------|------|------|------|----------|
+| TTS-01 | Edge TTS WS 1007 | "no header separator" | HTTP 头必须 `\r\n`（不能是 `\n`） | 协议逐字节对齐 |
+| TTS-02 | Edge TTS 1011 Bad request | Content-Type 带 charset 被拒 | 不能带 `; charset=utf-8` | 纯 `Content-Type: application/json` |
+| TTS-03 | AVPlayer 不支持 24kHz MP3 | CONTAINER_ERR | 非标 MPEG 容器 | 用 WAV（PCM 裸流）或 WebView `<audio>` |
+| TTS-04 | WebView autoplay 拦截 | NotAllowedError | 无用户手势交互 | 用户必须在 WebView 内点击触发 |
+| TTS-05 | minimp3 decode 不全 | 只解码一半帧 | `headerLen` 跳少了 2 字节（`\r\n`） | 用 `headerLen + 2` 而非 `headerLen` |
+| TTS-06 | hilog 编译 undefined | 链接报错 | CMakeLists 缺 hilog | 加 `libhilog_ndk.z.so` |
+| TTS-07 | CoreSpeechKit person 不生效 | TTS 声音参数无效果 | 设备缺少对应语音包 | 设备需要安装对应离线语言包 |
+
+---
+
+## 六、调试命令/工具
+
+```javascript
+// 浏览器控制台
+window.备忘录管理器.memos          // IndexedDB 数据
+window._备忘录数据                  // 内存缓存
+localStorage                       // 设置存储
+```
+
+```bash
+# 日志前缀
+[🔍调试] / [渲染] / [备忘录管理器] / [发送消息] / [对话历史]
+
+# 查看鸿蒙 hilog（手机连接后）
+# hdc shell hilog | grep 流云记
+```
