@@ -567,18 +567,9 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
         });
       }
       const 按钮位置 = 文件夹选择按钮.getBoundingClientRect();
-      文件夹下拉菜单.style.position = 'fixed';
+      // 只设置动态定位（top/left随按钮位置变化），样式全部由CSS class控制
       文件夹下拉菜单.style.top = (按钮位置.top + 按钮位置.height + 10) + 'px';
       文件夹下拉菜单.style.left = 按钮位置.left + 'px';
-      文件夹下拉菜单.style.zIndex = '9999';
-      文件夹下拉菜单.style.background = 'white';
-      文件夹下拉菜单.style.border = '1px solid #ccc';
-      文件夹下拉菜单.style.borderRadius = '8px';
-      文件夹下拉菜单.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-      文件夹下拉菜单.style.width = '200px';
-      文件夹下拉菜单.style.padding = '8px 0';
-      文件夹下拉菜单.style.maxHeight = '200px';
-      文件夹下拉菜单.style.overflowY = 'auto';
       文件夹下拉菜单.classList.add('显示');
     });
     document.addEventListener('click', (e) => {
@@ -594,19 +585,9 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
   window.关闭文件夹下拉菜单 = function() {
     if (文件夹下拉菜单) {
       文件夹下拉菜单.classList.remove('显示');
-      // 清除打开时设置的inline styles，防止残留影响
-      文件夹下拉菜单.style.position = '';
+      // 清除动态定位（top/left随按钮位置变化，关闭后需要重置）
       文件夹下拉菜单.style.top = '';
       文件夹下拉菜单.style.left = '';
-      文件夹下拉菜单.style.zIndex = '';
-      文件夹下拉菜单.style.background = '';
-      文件夹下拉菜单.style.border = '';
-      文件夹下拉菜单.style.borderRadius = '';
-      文件夹下拉菜单.style.boxShadow = '';
-      文件夹下拉菜单.style.width = '';
-      文件夹下拉菜单.style.padding = '';
-      文件夹下拉菜单.style.maxHeight = '';
-      文件夹下拉菜单.style.overflowY = '';
     }
   };
   window.关闭全局浮动菜单 = function() { var m = document.getElementById('全局浮动菜单'); if (m) m.classList.remove('显示'); };

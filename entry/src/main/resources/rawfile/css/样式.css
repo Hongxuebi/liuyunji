@@ -2020,12 +2020,22 @@ body {
   width: 200px;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 9999; /* 提高z-index确保显示在最上层 */
+  z-index: 9999;
   display: none;
 }
 
 .文件夹下拉菜单.显示 {
   display: block;
+  position: fixed;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  width: 200px;
+  padding: 8px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 9999;
 }
 
 .文件夹选项 {
