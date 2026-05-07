@@ -38,8 +38,6 @@ struct Index {
         .height('100%')
         .javaScriptAccess(true)
         .domStorageAccess(true)
-        // 禁用 Web 组件自带的侧滑前进/后退手势，防止吃掉系统返回手势
-        .gestureBackForward(false)
         .javaScriptProxy({
           object: this.bridge,
           name: 'nativeBridge',
