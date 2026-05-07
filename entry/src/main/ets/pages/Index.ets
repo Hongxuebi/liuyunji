@@ -44,16 +44,7 @@ struct Index {
           methodList: ['exitApp'],
           controller: this.controller,
         })
-        // Web 组件级的返回拦截（比页面级更早触发）
-        .onBackPress(() => {
-          hilog.info(DOMAIN, TAG, 'Web.onBackPress triggered');
-          try {
-            this.controller.runJavaScript('window._handleBack?.()');
-          } catch (e) {
-            hilog.error(DOMAIN, TAG, 'Web.onBackPress runJavaScript failed: %{public}s', JSON.stringify(e));
-          }
-          return true;
-        })
+
     }
     .width('100%')
     .height('100%')
