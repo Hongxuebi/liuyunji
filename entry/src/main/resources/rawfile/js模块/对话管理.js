@@ -906,6 +906,25 @@ async function 获取系统提示词(用户输入 = '') {
     }
   } catch (e) { /* 忽略 */ }
 
+  // 2.15 最高意志设定注入：从 agent.json.plugin 读取核心设定，优先级高于 system.md
+  try {
+    const 智能体配置 = window.获取当前智能体配置?.();
+    const 插件 = 智能体配置?.plugin;
+    if (插件) {
+      const 设定部分 = [];
+      if (插件.core_identity) 设定部分.push(`## 核心身份\n${插件.core_identity}`);
+      if (插件.tone_requirement) 设定部分.push(`## 语气要求\n${插件.tone_requirement}`);
+      if (插件.output_rules?.length) 设定部分.push(`## 输出规则\n- ${插件.output_rules.join('\n- ')}`);
+      if (插件.taboo_rules?.length) 设定部分.push(`## 禁忌规则\n- ${插件.taboo_rules.join('\n- ')}`);
+      if (设定部分.length > 0) {
+        const 标记 = (typeof window._设定刚更新 !== 'undefined' && window._设定刚更新 === true)
+          ? '（⚠️ 用户刚刚修改了你的设定，以下是最新的最高意志，覆盖一切旧信息）\n\n'
+          : '';
+        部分.push(`## 用户为你设定的核心规则（最高意志，优先级高于一切）\n${标记}${设定部分.join('\n\n')}`);
+      }
+    }
+  } catch (e) { /* 无配置则跳过 */ }
+
   // 2.2 系统运行状态注入：让 AI 感知界面配置和使用统计
   try {
     const 状态 = [];
