@@ -140,9 +140,9 @@ function 开始滑动(e) {
   const 卡片 = e.currentTarget;
   const 容器 = 卡片.closest('.备忘录卡片滑动容器');
   
-  // ★ 已展开的卡片：触摸在操作栏按钮上时不收起（让 click 正常处理），其余触摸收起
+  // ★ 已展开的卡片：触摸在操作栏按钮或复选框上时不收起（让 click/touchend 正常处理），其余收起
   if (容器.classList.contains('展开')) {
-    if (e.target.closest('.操作栏按钮')) return;
+    if (e.target.closest('.操作栏按钮') || e.target.closest('.多选复选框')) return;
     收起卡片(容器); return;
   }
   

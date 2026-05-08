@@ -3,6 +3,33 @@ import { common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { picker, fileIo } from '@kit.CoreFileKit';
 import { util } from '@kit.ArkTS';
+import { http } from '@kit.NetworkKit';
+
+interface MsgEntry {
+  content: string;
+  role: string;
+}
+
+interface ResourceFilter {
+  type: string;
+  top_k: number;
+}
+
+interface SearchBody {
+  messages: MsgEntry[];
+  search_source: string;
+  resource_type_filter: ResourceFilter[];
+}
+
+interface RequestConfig {
+  method: http.RequestMethod;
+  header: Record<string, string>;
+  extraData: string;
+  connectTimeout: number;
+  readTimeout: number;
+  expectDataType: http.HttpDataType;
+  usingCache: boolean;
+}
 
 const TAG = '流云记';
 const DOMAIN = 0xFF00;
@@ -23,6 +50,28 @@ function safeErrorMessage(e: Object): string {
   return String(e);
 }
 
+/** 转义字符串中的特殊字符，用于嵌入 JSON（避免 ArkTS 对象字面量限制） */
+function _safeEscapeJson(s: string): string {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (ch === '"') {
+      out += '\\"';
+    } else if (ch === '\\') {
+      out += '\\\\';
+    } else if (ch === '\n') {
+      out += '\\n';
+    } else if (ch === '\r') {
+      out += '\\r';
+    } else if (ch === '\t') {
+      out += '\\t';
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 // 暴露给 JS 的原生桥接对象
 class NativeBridge {
   private context: common.UIAbilityContext | null = null;
@@ -36,8 +85,8 @@ class NativeBridge {
     if (!this.context) {
       return;
     }
+    const ctx: common.UIAbilityContext = this.context;
     try {
-      const ctx: common.UIAbilityContext = this.context;
       ctx.terminateSelf();
     } catch (e) {
       hilog.error(DOMAIN, TAG, 'exitApp failed: %{public}s', JSON.stringify(e));
@@ -98,6 +147,51 @@ class NativeBridge {
     return data;
   }
 
+  // JS 调用：百度搜索（使用鸿蒙原生 HTTP 绕过 WebView CORS 限制）
+  // 请求体与 JS 端原 fetch 保持一致
+  // 返回 JSON.stringify({success:true, data: {...}}) 或 {success:false, error:"xxx"}
+  async baiduSearch(keyword: string, apiKey: string): Promise<string> {
+    const httpRequest = http.createHttp();
+    try {
+      const url: string = 'https://qianfan.baidubce.com/v2/ai_search/web_search';
+      const msgEntry: MsgEntry = { content: keyword, role: 'user' };
+      const filter: ResourceFilter = { type: 'web', top_k: 5 };
+      const searchBody: SearchBody = {
+        messages: [msgEntry],
+        search_source: 'baidu_search_v2',
+        resource_type_filter: [filter]
+      };
+      const body: string = JSON.stringify(searchBody);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      };
+      const config: RequestConfig = {
+        method: http.RequestMethod.POST,
+        header: headers,
+        extraData: body,
+        connectTimeout: 15000,
+        readTimeout: 15000,
+        expectDataType: http.HttpDataType.STRING,
+        usingCache: false
+      };
+      const result: http.HttpResponse = await httpRequest.request(url, config);
+      if (result.responseCode === 200) {
+        return result.result as string;
+      } else {
+        const errorText: string = result.result as string;
+        hilog.error(DOMAIN, TAG, 'baiduSearch failed: %{public}d %{public}s', result.responseCode, errorText);
+        return '{"success":false,"error":"HTTP ' + result.responseCode.toString() + ': ' + _safeEscapeJson(errorText.slice(0, 200)) + '"}';
+      }
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'baiduSearch error: %{public}s', JSON.stringify(e));
+      const errMsg: string = JSON.stringify(e);
+      return '{"success":false,"error":"' + _safeEscapeJson(errMsg) + '"}';
+    } finally {
+      httpRequest.destroy();
+    }
+  }
+
   private _base64ToArrayBuffer(base64: string): ArrayBuffer {
     const base64Helper = new util.Base64Helper();
     return base64Helper.decodeSync(base64).buffer as ArrayBuffer;
@@ -111,7 +205,11 @@ struct Index {
   private bridge: NativeBridge = new NativeBridge();
 
   aboutToAppear(): void {
-    this.bridge.setContext(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    try {
+      this.bridge.setContext(this.getUIContext().getHostContext() as common.UIAbilityContext);
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'aboutToAppear setContext failed: %{public}s', JSON.stringify(e));
+    }
   }
 
   build() {
@@ -126,7 +224,7 @@ struct Index {
         .javaScriptProxy({
           object: this.bridge,
           name: 'nativeBridge',
-          methodList: ['exitApp', 'saveFile', 'saveTextFile'],
+          methodList: ['exitApp', 'saveFile', 'saveTextFile', 'baiduSearch'],
           controller: this.controller,
         })
 

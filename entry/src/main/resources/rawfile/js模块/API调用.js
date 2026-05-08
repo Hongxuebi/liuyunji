@@ -1287,31 +1287,53 @@ async function 执行百度搜索(查询词) {
   try {
     console.log('百度搜索:', 查询词);
     
-    const 请求体 = {
-      messages: [
-        { content: 查询词, role: 'user' }
-      ],
-      search_source: 'baidu_search_v2',
-      resource_type_filter: [{ type: 'web', top_k: 5 }]
-    };
+    let 数据;
     
-    const 搜索URL = 'https://qianfan.baidubce.com/v2/ai_search/web_search';
-
-    const 响应 = await fetch(搜索URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + 百度密钥
-      },
-      body: JSON.stringify(请求体)
-    });
-    
-    if (!响应.ok) {
-      console.warn('百度搜索请求失败:', 响应.status, await 响应.text());
-      return null;
+    // 判断是否在鸿蒙原生 WebView 中（有 nativeBridge.baiduSearch）
+    if (window.nativeBridge && window.nativeBridge.baiduSearch) {
+      // 鸿蒙原生 HTTP 请求（绕过 WebView CORS 限制）
+      const 结果字符串 = await window.nativeBridge.baiduSearch(查询词, 百度密钥);
+      // 原生返回原始响应体字符串；出错时返回 {success:false, error:"xxx"}
+      const 首次解析 = JSON.parse(结果字符串);
+      if (首次解析 && 首次解析.success === false) {
+        console.warn('百度搜索原生请求失败:', 首次解析.error);
+        // 降级：尝试桌面端 fetch（有些场景原生失败但 fetch 可通）
+        console.log('原生搜索失败，降级到 fetch');
+        数据 = null;
+      } else {
+        数据 = 首次解析;
+      }
     }
     
-    const 数据 = await 响应.json();
+    if (!数据) {
+      // 桌面端或原生降级：直接 fetch（浏览器可能无 CORS 限制）
+      const 请求体 = {
+        messages: [
+          { content: 查询词, role: 'user' }
+        ],
+        search_source: 'baidu_search_v2',
+        resource_type_filter: [{ type: 'web', top_k: 5 }]
+      };
+      
+      const 搜索URL = 'https://qianfan.baidubce.com/v2/ai_search/web_search';
+
+      const 响应 = await fetch(搜索URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + 百度密钥
+        },
+        body: JSON.stringify(请求体)
+      });
+      
+      if (!响应.ok) {
+        console.warn('百度搜索请求失败:', 响应.status, await 响应.text());
+        return null;
+      }
+      
+      数据 = await 响应.json();
+    }
+    
     console.log('百度搜索结果:', 数据);
     
     if (数据.code) {
@@ -1324,7 +1346,11 @@ async function 执行百度搜索(查询词) {
         `[${i + 1}] ${条目.title || ''}\n${条目.abstract || 条目.content || 条目.snippet || ''}\n来源: ${条目.url || 条目.link || ''}`
       ).join('\n\n');
       console.log('百度搜索成功，获取到', 数据.references.length, '条结果');
-      return `以下是从互联网搜索到的相关信息：\n\n${搜索摘要}\n\n请根据以上搜索结果回答用户的问题。如果搜索结果不足以回答，请说明。`;
+      return `【联网搜索结果 — 真实数据 — 必须基于此回答】
+
+${搜索摘要}
+
+**请严格按照以上搜索结果回答用户的问题。这是实时联网搜索结果，不是你的训练数据。如果搜索结果为空或不足以回答，请如实说缺乏足够信息。**`;
     }
     
     return null;
