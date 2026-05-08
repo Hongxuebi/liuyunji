@@ -1918,6 +1918,51 @@ if (存储的会话列表 && 存储的会话列表.length > 0) {
 
 window.切换会话 = 切换会话;
 
+// ========== AI 工具用的会话管理函数 ==========
+
+window.重命名会话 = async function(会话ID, 新名称) {
+  const 智能体ID = window.当前智能体ID ? window.当前智能体ID() : 'default';
+  const 列表 = 所有会话列表[智能体ID] || [];
+  const 会话 = 列表.find(s => s.id === 会话ID);
+  if (!会话) return false;
+  if (!新名称 || !新名称.trim()) return false;
+  会话.名称 = 新名称.trim().slice(0, 30);
+  会话.最后活跃时间 = Date.now();
+  保存会话列表ToStorage(智能体ID, 列表);
+  渲染会话列表();
+  const 名称元素 = document.getElementById('当前会话名称');
+  if (名称元素 && 会话ID === 当前会话ID) {
+    名称元素.innerText = 会话.名称;
+  }
+  return true;
+};
+
+window.删除会话 = async function(会话ID) {
+  const 智能体ID = window.当前智能体ID ? window.当前智能体ID() : 'default';
+  const 列表 = 所有会话列表[智能体ID] || [];
+  const 索引 = 列表.findIndex(s => s.id === 会话ID);
+  if (索引 === -1) return false;
+  列表.splice(索引, 1);
+  保存会话列表ToStorage(智能体ID, 列表);
+  // 清理 IndexedDB 中的对话历史文件
+  try {
+    const 存储 = window.获取存储();
+    存储.删除文件(`agents/${智能体ID}/对话历史/${会话ID}.json`).catch(() => {});
+    存储.删除文件(`agents/${智能体ID}/对话历史/${会话ID}_summaries.json`).catch(() => {});
+  } catch(e) { /* 忽略 */ }
+  // 如果删除的是当前会话，切到第一个可用或新建
+  if (会话ID === 当前会话ID) {
+    if (列表.length > 0) {
+      setTimeout(() => 切换会话(列表[0].id), 0);
+    } else {
+      window.新建会话?.();
+    }
+  } else {
+    渲染会话列表();
+  }
+  return true;
+};
+
 window.加载智能体会话列表 = (智能体ID) => {
   const 存储的 = 加载会话列表FromStorage(智能体ID);
   if (存储的 && 存储的.length > 0) {
