@@ -228,8 +228,8 @@ struct Index {
           methodList: ['exitApp', 'saveFile', 'saveTextFile', 'baiduSearch'],
           controller: this.controller,
         })
-        .onAlert((event) => {
-          promptAction.showToast({ message: event.getMessage(), duration: 2000 });
+        .onAlert((event: OnAlertEvent) => {
+          promptAction.showToast({ message: event.message, duration: 2000 });
           return true;
         })
 
