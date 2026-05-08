@@ -129,7 +129,7 @@ class NativeBridge {
         return JSON.stringify({ success: false, error: '用户取消保存' });
       }
       const encoder = new util.TextEncoder();
-      const buffer = encoder.encodeInto(text);
+      const buffer = encoder.encode(text);
       const file = fileIo.openSync(uri[0], fileIo.OpenMode.WRITE_ONLY);
       fileIo.writeSync(file.fd, buffer);
       fileIo.closeSync(file);
