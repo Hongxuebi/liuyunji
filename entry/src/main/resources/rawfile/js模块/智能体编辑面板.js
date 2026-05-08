@@ -163,7 +163,7 @@ function 显示智能体管理菜单(x, y, 智能体ID) {
     项.addEventListener('click', async () => {
       const action = 项.dataset.action;
       if (action === 'rename') {
-        const 新名称 = prompt('输入新名称：', 名称);
+        const 新名称 = await window._自定义输入('输入新名称：', 名称);
         if (新名称 && 新名称.trim() && 新名称 !== 名称) {
           try {
             const 存储 = window.获取存储 && window.获取存储();
@@ -174,6 +174,13 @@ function 显示智能体管理菜单(x, y, 智能体ID) {
               配置Obj.name = 新名称.trim();
               配置Obj.updated_at = new Date().toISOString();
               await 存储.写文件(路径, JSON.stringify(配置Obj, null, 2));
+              // 同步重命名同名文件夹
+              if (window._重命名文件夹 && 新名称.trim() !== 名称) {
+                try {
+                  window._重命名文件夹(名称, 新名称.trim());
+                  if (window.渲染文件夹树) window.渲染文件夹树();
+                } catch(e) { console.warn('重命名同名文件夹失败', e); }
+              }
               if (window.刷新智能体UI) await window.刷新智能体UI();
               if (window.渲染记忆库面板) await window.渲染记忆库面板();
             }
@@ -182,8 +189,8 @@ function 显示智能体管理菜单(x, y, 智能体ID) {
           }
         }
       } else if (action === 'delete') {
-        if (confirm('确认删除「' + 名称 + '」？此操作不可恢复！')) {
-          if (confirm('再次确认：所有对话历史和记忆都将被清除。')) {
+        if (await window._自定义确认('确认删除「' + 名称 + '」？此操作不可恢复！')) {
+          if (await window._自定义确认('再次确认：所有对话历史和记忆都将被清除。')) {
             if (window.删除智能体) {
               await window.删除智能体(智能体ID);
               if (window.刷新智能体UI) await window.刷新智能体UI();
@@ -322,7 +329,7 @@ async function 渲染右列标题(智能体ID, 配置) {
   const 删除Btn = document.getElementById('智能体编辑删除按钮');
   if (删除Btn) {
     删除Btn.addEventListener('click', async () => {
-      if (confirm('确认删除「' + 名称 + '」？所有对话历史和记忆都将被清除。')) {
+      if (await window._自定义确认('确认删除「' + 名称 + '」？所有对话历史和记忆都将被清除。')) {
         if (window.删除智能体) {
           await window.删除智能体(智能体ID);
           if (window.刷新智能体UI) await window.刷新智能体UI();
@@ -352,7 +359,7 @@ async function 渲染右列标题(智能体ID, 配置) {
   const 添加标签Btn = document.getElementById('智能体编辑添加标签');
   if (添加标签Btn) {
     添加标签Btn.addEventListener('click', async () => {
-      const 新标签 = prompt('输入标签名称：');
+      const 新标签 = await window._自定义输入('输入标签名称：');
       if (新标签 && 新标签.trim()) {
         const 标签 = 新标签.trim();
         if (!(配置?.tags || []).includes(标签)) {
@@ -434,7 +441,7 @@ async function 渲染记忆列表() {
       btn.addEventListener('click', async (e) => {
         const id = parseInt(e.target.dataset.id);
         if (isNaN(id)) return;
-        if (confirm('确定要删除这条记忆吗？')) {
+        if (await window._自定义确认('确定要删除这条记忆吗？')) {
           await 管理器.删除(id);
           await 渲染记忆列表();
         }
@@ -700,6 +707,16 @@ async function 保存配置(智能体ID, 新配置) {
       window.AI记忆管理器.ai身份.名称 = 新配置.name;
       await window.AI记忆管理器._saveConfig('ai_identity', window.AI记忆管理器.ai身份);
     } catch(e) { console.warn('同步AI身份名称失败', e); }
+  }
+
+  // 同步重命名同名文件夹
+  if (新配置.name && 现有.name && 新配置.name !== 现有.name) {
+    try {
+      if (window._重命名文件夹) {
+        window._重命名文件夹(现有.name, 新配置.name);
+        if (window.渲染文件夹树) window.渲染文件夹树();
+      }
+    } catch(e) { console.warn('重命名同名文件夹失败', e); }
   }
 
   if (window.加载智能体) await window.加载智能体(智能体ID);

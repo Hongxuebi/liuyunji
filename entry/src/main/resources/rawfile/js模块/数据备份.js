@@ -509,7 +509,7 @@ window.绑定备份按钮 = function() {
         alert('\u274c 备份失败：' + 结果.错误);
       }
     } else if (操作 === '恢复' && 文件名) {
-      if (!confirm('确定从该备份恢复？\n' + 文件名 + '\n\n注意：恢复操作会添加新备忘录，不会覆盖现有数据。')) return;
+      if (!await window._自定义确认('确定从该备份恢复？\n' + 文件名 + '\n\n注意：恢复操作会添加新备忘录，不会覆盖现有数据。')) return;
       btn.disabled = true;
       btn.textContent = '恢复中…';
       const 结果 = await window.备份_执行恢复(文件名);
@@ -529,7 +529,7 @@ window.绑定备份按钮 = function() {
       btn.disabled = false;
       btn.textContent = '导出';
     } else if (操作 === '删除' && 文件名) {
-      if (!confirm('确定永久删除备份文件？\n' + 文件名)) return;
+      if (!await window._自定义确认('确定永久删除备份文件？\n' + 文件名)) return;
       const 结果 = await window.备份_删除备份(文件名);
       if (结果.成功) {
         alert('\u2705 备份已删除');

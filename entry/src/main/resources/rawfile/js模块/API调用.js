@@ -112,7 +112,7 @@ const _备忘录工具列表 = [
         "type": "object",
         "properties": {
           "标题": { "type": "string", "description": "备忘录标题，简短明确，不超过30字" },
-          "内容": { "type": "string", "description": "备忘录正文内容，如需分段用换行，不超过2000字" },
+          "内容": { "type": "string", "description": "备忘录正文内容，支持HTML格式（可用<span style='color:red'>、<b>、<i>、<u>、<s>、<h1>-<h3>、<blockquote>、<table>、<ul>/<ol>、<hr>等标签设置富文本样式），也可用纯文本。如需分段用换行，不超过2000字" },
           "标签": { "type": "array", "items": { "type": "string" }, "description": "标签数组，最多3个" },
           "文件夹": { "type": "string", "description": "所属文件夹名称。支持多级路径如「个人/日记/2026年」（用 / 或 → 分隔），会自动创建不存在的中间文件夹。默认为「未分类」" }
         },
@@ -130,7 +130,7 @@ const _备忘录工具列表 = [
         "properties": {
           "备忘录ID": { "type": "integer", "description": "要更新的备忘录ID" },
           "标题": { "type": "string", "description": "新的标题，不改则不传" },
-          "内容": { "type": "string", "description": "新的内容，不改则不传" },
+          "内容": { "type": "string", "description": "新的内容，支持HTML格式（可用<span style='color:red'>、<b>、<i>、<u>、<s>、<h1>-<h3>、<blockquote>、<table>、<ul>/<ol>、<hr>等标签设置富文本样式），也可用纯文本。不改则不传" },
           "标签": { "type": "array", "items": { "type": "string" }, "description": "新标签数组，不改则不传" },
           "文件夹": { "type": "string", "description": "新的文件夹名称。必须是现有文件夹（通过 get_folder_tree 获取）。如果用户指定的文件夹不存在，请先调用 create_folder 创建。" }
         },
@@ -1415,7 +1415,7 @@ async function 调用API(消息列表, 调用轮次 = 0, 状态回调 = null, �
     // 只在第一轮检测操作关键词并强制调用，后续轮次用 auto（允许AI返回文本）
     if (调用轮次 === 0) {
       const 最后用户消息 = 消息列表.filter(m => m.role === 'user').pop()?.content || '';
-      const 操作关键词 = ['标记', '完成', '勾选', '取消', '修改', '删除', '新建', '创建', '整理', '移动', '重命名', '切换', '设置', '添加', '移除', '执行', '调用'];
+      const 操作关键词 = ['标记', '完成', '勾选', '取消', '修改', '删除', '新建', '创建', '整理', '移动', '重命名', '切换', '设置', '添加', '移除', '执行', '调用', '加粗', '斜体', '颜色', '字体', '富文本', '格式', '字号', '样式', '下划线', '删除线'];
       const 包含操作 = 操作关键词.some(词 => 最后用户消息.includes(词));
       请求体.tool_choice = 包含操作 ? 'required' : 'auto';
       console.log(`[工具调用] 检测到操作关键词: ${包含操作}, tool_choice: ${请求体.tool_choice}`);
@@ -1982,7 +1982,7 @@ async function 处理备忘录工具(工具名, 参数) {
     
     if (是否需要新建文件夹 || !文件夹已存在) {
       const 父文件夹提示 = 新建文件夹的父文件夹 ? `（作为「${新建文件夹的父文件夹}」的子文件夹）` : '';
-      const 用户确认 = confirm(
+      const 用户确认 = await window._自定义确认(
         `AI 整理建议\n\n` +
         `建议将备忘录 #${备忘录ID} 移动到：\n` +
         `新文件夹：「${建议文件夹}」${父文件夹提示}\n\n` +
@@ -3054,7 +3054,7 @@ async function 处理代码工具(工具名, 参数) {
     if (!代码) return '缺少代码';
 
     if (需要确认) {
-      const 用户确认 = confirm(
+      const 用户确认 = await window._自定义确认(
         `AI 请求执行 JavaScript 代码\n\n` +
         `目的：${目的 || '未说明'}\n\n` +
         `代码预览（前200字符）：\n${代码.slice(0, 200)}${代码.length > 200 ? '...' : ''}\n\n` +

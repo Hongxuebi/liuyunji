@@ -545,17 +545,21 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
       // 绑定"新建文件夹"事件
       const 新建文件夹选项 = 文件夹下拉菜单.querySelector('.新建文件夹选项');
       if (新建文件夹选项) {
-        新建文件夹选项.addEventListener('click', (optEvent) => {
+        新建文件夹选项.addEventListener('click', async (optEvent) => {
           optEvent.stopPropagation();
-          const 文件夹名称 = prompt('请输入新文件夹名称：');
+          // 用自定义对话框替代 prompt()（鸿蒙 WebView 屏蔽 prompt）
+          let 文件夹名称;
+          if (window._自定义输入) {
+            文件夹名称 = await window._自定义输入('请输入新文件夹名称：');
+          } else {
+            文件夹名称 = await window._自定义输入('请输入新文件夹名称：');
+          }
           if (文件夹名称 && 文件夹名称.trim()) {
             if (window._创建文件夹) {
               const 成功 = window._创建文件夹(文件夹名称.trim(), null);
               if (成功) {
-                // 选中新创建的文件夹
                 const 当前文件夹名称Span = document.getElementById('当前文件夹名称');
                 if (当前文件夹名称Span) 当前文件夹名称Span.textContent = 文件夹名称.trim();
-                // 刷新抽屉的文件夹树
                 if (window.渲染文件夹树) window.渲染文件夹树();
               } else {
                 alert('文件夹已存在或创建失败');
@@ -735,9 +739,9 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
   }
 
   // 删除标签（全局）
-  function 全局删除标签(标签原始) {
+  async function 全局删除标签(标签原始) {
     const 标签 = decodeURIComponent(标签原始);
-    if (!confirm(`确定删除标签「${标签}」？\n该操作将从所有备忘录中移除该标签。`)) return;
+    if (!await window._自定义确认(`确定删除标签「${标签}」？\n该操作将从所有备忘录中移除该标签。`)) return;
     const 数据源 = window._备忘录数据源 || window.备忘录管理器?.memos || [];
     数据源.forEach(m => {
       if (m.标签 && Array.isArray(m.标签) && m.标签.includes(标签)) {
@@ -773,8 +777,8 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
     });
   }
   if (新建标签按钮) {
-    新建标签按钮.addEventListener('click', () => {
-      const 名称 = prompt('新建标签：', '');
+    新建标签按钮.addEventListener('click', async () => {
+      const 名称 = await window._自定义输入('新建标签：', '');
       if (!名称 || !名称.trim()) return;
       const 新 = 名称.trim().slice(0, 20);
       const 已存在 = window._获取所有已用标签() || [];
@@ -860,14 +864,14 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
         document.removeEventListener('click', 关闭菜单);
       }
     };
-    菜单.addEventListener('click', (ev) => {
+    菜单.addEventListener('click', async (ev) => {
       const 操作项 = ev.target.closest('.标签操作项');
       if (!操作项) return;
       const action = 操作项.dataset.action;
       菜单.remove();
       document.removeEventListener('click', 关闭菜单);
       if (action === 'delete') {
-        if (confirm('删除标签「' + 标签名 + '」？')) {
+        if (await window._自定义确认('删除标签「' + 标签名 + '」？')) {
           if (window.全局删除标签) window.全局删除标签(encodeURIComponent(标签名));
         }
       } else if (action === 'view') {
@@ -2041,7 +2045,7 @@ ${deadlineDisplay}`;
           const 回收站列表 = window.备忘录管理器?.获取回收站列表?.() || [];
           if (回收站列表.length === 0) {
             alert('回收站已经是空的');
-          } else if (confirm(`确定要永久删除 ${回收站列表.length} 条备忘录吗？此操作不可撤销。`)) {
+          } else if (await window._自定义确认(`确定要永久删除 ${回收站列表.length} 条备忘录吗？此操作不可撤销。`)) {
             try {
               const 结果 = await window.备忘录管理器.清空回收站();
               alert(`已清空回收站，永久删除了 ${结果.删除数量} 条备忘录`);
@@ -2057,7 +2061,7 @@ ${deadlineDisplay}`;
           const 回收站列表 = window.备忘录管理器?.获取回收站列表?.() || [];
           if (回收站列表.length === 0) {
             alert('回收站中没有可恢复的备忘录');
-          } else if (confirm(`确定要恢复 ${回收站列表.length} 条备忘录吗？`)) {
+          } else if (await window._自定义确认(`确定要恢复 ${回收站列表.length} 条备忘录吗？`)) {
             try {
               let 恢复数量 = 0;
               for (const 备忘录 of 回收站列表) {
@@ -2707,9 +2711,15 @@ async function 批量移动() {
     // 绑定"新建文件夹"事件
     const 新建文件夹选项 = 下拉菜单.querySelector('.新建文件夹选项');
     if (新建文件夹选项) {
-      新建文件夹选项.addEventListener('click', (optEvent) => {
+      新建文件夹选项.addEventListener('click', async (optEvent) => {
         optEvent.stopPropagation();
-        const 文件夹名称 = prompt('请输入新文件夹名称：');
+        // 用自定义对话框替代 prompt()（鸿蒙 WebView 屏蔽 prompt）
+        let 文件夹名称;
+        if (window._自定义输入) {
+          文件夹名称 = await window._自定义输入('请输入新文件夹名称：');
+        } else {
+          文件夹名称 = await window._自定义输入('请输入新文件夹名称：');
+        }
         if (文件夹名称 && 文件夹名称.trim()) {
           if (window._创建文件夹) {
             const 成功 = window._创建文件夹(文件夹名称.trim(), null);
@@ -2771,7 +2781,7 @@ async function 批量删除() {
   const 选中列表 = window.多选状态?.获取选中列表() || [];
   if (选中列表.length === 0) return;
   
-  if (!confirm(`确定要将 ${选中列表.length} 条备忘录移入回收站吗？`)) return;
+  if (!await window._自定义确认(`确定要将 ${选中列表.length} 条备忘录移入回收站吗？`)) return;
   
   let 成功数量 = 0;
   for (const id of 选中列表) {
@@ -2809,7 +2819,7 @@ async function 批量永久删除() {
   const 选中列表 = window.多选状态?.获取选中列表() || [];
   if (选中列表.length === 0) return;
   
-  if (!confirm(`确定要永久删除 ${选中列表.length} 条备忘录吗？此操作不可撤销！`)) return;
+  if (!await window._自定义确认(`确定要永久删除 ${选中列表.length} 条备忘录吗？此操作不可撤销！`)) return;
   
   let 成功数量 = 0;
   for (const id of 选中列表) {

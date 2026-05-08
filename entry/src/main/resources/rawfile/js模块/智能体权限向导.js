@@ -1,6 +1,9 @@
 // 智能体权限向导.js - 创建/删除智能体时的权限和文件夹管理弹窗
 // 依赖：智能体管理.js, 备忘录数据.js（含文件夹操作）, 智能体编辑面板.js（含打开权限选择器）
 
+// 本地 escHtml（不依赖外部模块，避免 ReferenceError）
+function 权限escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 // ================================================================
 // 1. 创建智能体后弹出权限设置卡片
 // ================================================================
@@ -38,7 +41,7 @@ async function 打开创建后权限设置(智能体ID, 名称, 图标) {
     <div class="智能体权限向导-卡片" style="background:var(--内容底色,#fff);border-radius:14px;width:88%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.3);overflow:hidden;">
       <!-- 头部 -->
       <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--暖灰色,#eee);">
-        <span style="font-size:1rem;font-weight:600;">${图标} ${escHtml(名称)} — 备忘录权限</span>
+        <span style="font-size:1rem;font-weight:600;">${图标} ${权限escHtml(名称)} — 备忘录权限</span>
         <button class="智能体权限向导-关闭" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--文字辅色,#999);padding:4px 8px;">✕</button>
       </div>
       <!-- 说明 -->
@@ -91,8 +94,8 @@ async function 打开创建后权限设置(智能体ID, 名称, 图标) {
     }
     文件夹选择区.innerHTML = 展开文件夹列表.map(f => `
       <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;hover:background:#e0e0e0;">
-        <input type="checkbox" value="${escHtml(f.名称)}" style="accent-color:#8b5cf6;">
-        <span style="font-size:0.82rem;">📂 ${escHtml(f.全名)}</span>
+        <input type="checkbox" value="${权限escHtml(f.名称)}" style="accent-color:#8b5cf6;">
+        <span style="font-size:0.82rem;">📂 ${权限escHtml(f.全名)}</span>
       </label>
     `).join('');
   }
@@ -212,7 +215,7 @@ function 打开删除智能体向导(智能体ID, 名称, 图标) {
         </div>
         <!-- 说明 -->
         <div style="padding:14px 20px;font-size:0.85rem;color:var(--文字辅色,#666);line-height:1.5;">
-          即将删除智能体 <strong>${图标} ${escHtml(名称)}</strong>，关联数据将不可恢复。
+          即将删除智能体 <strong>${图标} ${权限escHtml(名称)}</strong>，关联数据将不可恢复。
         </div>
         <!-- 文件夹处理选项 -->
         <div style="padding:0 20px 12px;display:flex;flex-direction:column;gap:8px;">

@@ -225,7 +225,7 @@ async function _显示导出选项(标题, 数量) {
   }
   
   // 简化版：先用confirm选择是否ZIP
-  const 使用ZIP = confirm(`${消息}\n\n点击「确定」→ 打包为ZIP（含单独文本文件）\n点击「取消」→ 导出为JSON文件`);
+  const 使用ZIP = await window._自定义确认(`${消息}\n\n点击「确定」→ 打包为ZIP（含单独文本文件）\n点击「取消」→ 导出为JSON文件`);
   return 使用ZIP ? 'zip' : 'json';
 }
 
@@ -657,7 +657,7 @@ async function _导入JSON(file, resolve) {
 
   // 预览
   const 重复提示 = 重复.length > 0 ? `\n检测到 ${重复.length} 条重复，已自动跳过` : '';
-  const 确认 = confirm(
+  const 确认 = await window._自定义确认(
     `即将导入 ${新增.length} 条新备忘录${重复提示}\n\n点击确定继续`
   );
   if (!确认) { resolve(null); return; }
@@ -807,7 +807,7 @@ async function _导入结构化ZIP(zip, 清单文件, resolve) {
   console.log('[结构化ZIP导入] 去重结果: 新增', 新增.length, '重复', 重复.length);
 
   const 重复提示 = 重复.length > 0 ? `\n检测到 ${重复.length} 条重复，已自动跳过` : '';
-  const 确认 = confirm(
+  const 确认 = await window._自定义确认(
     `✅ 识别为爱助手导出包，将完美还原所有数据\n` +
     `即将导入 ${新增.length} 条备忘录（含标签/文件夹/收藏/附件）${重复提示}\n\n` +
     `点击确定继续`
@@ -907,7 +907,7 @@ async function _导入纯文本ZIP(zip, resolve) {
   });
 
   const 重复提示 = 重复.length > 0 ? `\n检测到 ${重复.length} 条重复，已自动跳过` : '';
-  const 确认 = confirm(
+  const 确认 = await window._自定义确认(
     `ZIP 中找到 ${txt文件列表.length} 个 .txt 文件\n` +
     `即将导入 ${新增.length} 条新备忘录${重复提示}\n\n` +
     `点击确定继续`

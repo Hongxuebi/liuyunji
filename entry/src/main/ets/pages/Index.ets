@@ -38,6 +38,8 @@ struct Index {
         .height('100%')
         .javaScriptAccess(true)
         .domStorageAccess(true)
+        .backgroundColor('#0A0E1A')
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
         .javaScriptProxy({
           object: this.bridge,
           name: 'nativeBridge',
