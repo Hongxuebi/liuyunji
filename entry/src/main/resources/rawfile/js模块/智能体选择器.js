@@ -36,6 +36,9 @@ window.创建智能体选择器UI = async function() {
     if (document.querySelector('.智能体选择器')) { window._调试面板('选择器已存在，跳过'); return; }
 
     window._调试面板('step6: 开始创建DOM');
+  } catch(e) {
+    window._调试面板('创建选择器异常: ' + String(e));
+  }
 
   const 选择器容器 = document.createElement('div');
   选择器容器.className = '智能体选择器';
