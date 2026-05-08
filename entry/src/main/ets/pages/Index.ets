@@ -130,8 +130,8 @@ class NativeBridge {
       }
       const encoder = new util.TextEncoder();
       const buffer = encoder.encode(text);
-      const file = fileIo.openSync(uri[0], fileIo.OpenMode.WRITE_ONLY);
-      fileIo.writeSync(file.fd, buffer);
+      const file = fileIo.openSync(uri[0], fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.CREATE);
+      fileIo.writeSync(file.fd, buffer.buffer as ArrayBuffer);
       fileIo.closeSync(file);
       return JSON.stringify({ success: true });
     } catch (e) {
