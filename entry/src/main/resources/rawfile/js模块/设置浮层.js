@@ -109,9 +109,9 @@ window.绑定设置浮层 = function() {
       window.全局设置.启用流式输出 = this.checked;
       window.保存设置();
       if (this.checked) {
-        alert('✅ 已开启流式输出，后续对话将实时显示回复内容（函数调用将被暂时禁用）');
+        window._显示提示('已开启流式输出','info');
       } else {
-        alert('✅ 已关闭流式输出，将使用标准模式（支持函数调用）');
+        window._显示提示('已关闭流式输出','info');
       }
     });
   }

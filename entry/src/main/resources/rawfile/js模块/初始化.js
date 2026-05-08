@@ -9,7 +9,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.log('存储适配器初始化成功');
   } catch (错误) {
     console.error('存储适配器初始化失败', 错误);
-    alert('存储初始化失败，应用将无法保存数据');
+    window._显示提示('存储初始化失败，应用将无法保存数据','error');
     return;
   }
   
@@ -298,4 +298,39 @@ window._解锁滚动 = function() {
     主内容区.style.overflow = 主内容区.dataset._原Overflow;
     delete 主内容区.dataset._原Overflow;
   }
+};
+
+// === 全局浮动提示（替代 alert，兼容鸿蒙 WebView） ===
+window._显示提示 = function(消息, 类型 = 'info') {
+  const 旧容器 = document.getElementById('_全局提示容器');
+  if (旧容器) 旧容器.remove();
+
+  const 容器 = document.createElement('div');
+  容器.id = '_全局提示容器';
+  容器.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${类型 === 'error' ? '#ef4444' : (类型 === 'success' ? '#22c55e' : '#3b82f6')};
+    color: white;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 100000;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    max-width: 85%;
+    text-align: center;
+    transition: opacity 0.3s ease;
+    opacity: 1;
+    pointer-events: none;
+    line-height: 1.5;
+  `;
+  容器.textContent = 消息;
+  document.body.appendChild(容器);
+
+  setTimeout(() => {
+    容器.style.opacity = '0';
+    setTimeout(() => 容器.remove(), 300);
+  }, 2800);
 };

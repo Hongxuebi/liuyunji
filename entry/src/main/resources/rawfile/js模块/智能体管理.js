@@ -319,7 +319,7 @@ window.绑定添加智能体浮层 = function() {
   if (确认按钮) {
     确认按钮.addEventListener('click', async () => {
       const 名称 = document.getElementById('新智能体名称')?.value.trim();
-      if (!名称) { alert('请输入智能体名称'); return; }
+      if (!名称) { window._显示提示('请输入智能体名称','error'); return; }
       const 选中图标 = document.querySelector('#新智能体图标选择 .图标选项[data-selected="1"]');
       const 图标 = 选中图标?.dataset.icon || '🤖';
       try {
@@ -329,7 +329,7 @@ window.绑定添加智能体浮层 = function() {
         if (window.切换智能体) await window.切换智能体(新智能体.id);
       } catch (e) {
         console.error('创建智能体失败', e);
-        alert('创建失败：' + e.message);
+        window._显示提示('创建失败：' + e.message,'error');
       }
     });
   }
@@ -563,7 +563,7 @@ window.裁切图片为正方形 = function(file) {
  */
 window.删除智能体 = async function(智能体ID) {
   if (智能体ID === 'default') {
-    alert('不能删除默认智能体');
+    window._显示提示('不能删除默认智能体','info');
     return false;
   }
   const 存储 = window.获取存储();
@@ -591,7 +591,7 @@ window.删除智能体 = async function(智能体ID) {
     return true;
   } catch (e) {
     console.error('删除智能体失败', e);
-    alert('删除失败：' + (e.message || '未知错误'));
+    window._显示提示('删除失败：' + (e.message || '未知错误'),'error');
     return false;
   }
 };

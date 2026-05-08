@@ -109,8 +109,8 @@ function 实际处理操作栏操作(按钮) {
         // 降级：用自定义对话框替代 prompt()（鸿蒙 WebView 屏蔽 prompt）
         window._自定义输入(`移动「${待移动备忘录?.标题?.slice(0, 20) || id}」\n\n当前：${当前文件夹}\n\n输入目标文件夹：\n\n可用：${所有文件夹.join('、')}`, 当前文件夹).then(目标文件夹 => {
           if (!目标文件夹) return;
-          if (!所有文件夹.includes(目标文件夹)) { alert(`文件夹「${目标文件夹}」不存在`); return; }
-          if (目标文件夹 === 当前文件夹) { alert('已在该文件夹中'); return; }
+          if (!所有文件夹.includes(目标文件夹)) { window._显示提示(`文件夹「${目标文件夹}」不存在`,'error'); return; }
+          if (目标文件夹 === 当前文件夹) { window._显示提示('已在该文件夹中','info'); return; }
           window.备忘录管理器.updateMemo(id, { 文件夹: 目标文件夹 }).then(() => { if (window.渲染备忘录列表) window.渲染备忘录列表(); });
         });
       }

@@ -1,4 +1,5 @@
 import { webview } from '@kit.ArkWeb';
+import { promptAction } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { picker, fileIo } from '@kit.CoreFileKit';
@@ -226,6 +227,10 @@ struct Index {
           name: 'nativeBridge',
           methodList: ['exitApp', 'saveFile', 'saveTextFile', 'baiduSearch'],
           controller: this.controller,
+        })
+        .onAlert((event) => {
+          promptAction.showToast({ message: event.getMessage(), duration: 2000 });
+          return true;
         })
 
     }
