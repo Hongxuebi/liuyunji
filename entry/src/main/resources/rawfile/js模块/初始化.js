@@ -23,7 +23,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 记忆管理由 AI记忆管理器 按需初始化，旧 MemoryManager 已废弃
   
   // 创建智能体选择器（函数在智能体选择器.js中）
-  if (window.创建智能体选择器UI) await window.创建智能体选择器UI();
+  console.log('[调试] 开始创建智能体选择器...');
+  if (window.创建智能体选择器UI) {
+    console.log('[调试] 创建智能体选择器UI函数存在');
+    try {
+      await window.创建智能体选择器UI();
+      console.log('[调试] 创建智能体选择器UI执行完成。选择器DOM是否存在:', !!document.querySelector('.智能体选择器'));
+    } catch (e) {
+      console.error('[调试] 创建智能体选择器异常:', e);
+    }
+  } else {
+    console.error('[调试] 创建智能体选择器UI函数不存在！');
+  }
   
   // 绑定各模块事件
   if (window.绑定抽屉事件) window.绑定抽屉事件();

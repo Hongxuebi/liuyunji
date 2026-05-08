@@ -1,8 +1,10 @@
 // 智能体选择器.js - 智能体选择UI + 添加新智能体
 window.创建智能体选择器UI = async function() {
+  console.log('[调试-选择器] 开始创建...');
   // 挂载到左侧区
   const 左侧区 = document.querySelector('.左侧区');
-  if (!左侧区) return;
+  console.log('[调试-选择器] .左侧区 找到:', !!左侧区);
+  if (!左侧区) { console.error('[调试-选择器] .左侧区 不存在！'); return; }
 
   if (!window.获取智能体列表) {
     console.warn('获取智能体列表函数未定义，稍后重试');
@@ -13,10 +15,12 @@ window.创建智能体选择器UI = async function() {
   let 智能体列表 = [];
   try {
     智能体列表 = await window.获取智能体列表();
+    console.log('[调试-选择器] 获取智能体列表成功，数量:', 智能体列表?.length);
   } catch (e) {
-    console.error('获取智能体列表失败', e);
+    console.error('[调试-选择器] 获取智能体列表失败', e);
   }
   if (!智能体列表 || !Array.isArray(智能体列表)) 智能体列表 = [];
+  console.log('[调试-选择器] 智能体列表最终:', JSON.stringify(智能体列表));
 
   const 当前ID = window.当前智能体ID ? window.当前智能体ID() : 'default';
   const 当前智能体 = 智能体列表.find(a => a.id === 当前ID) || { id: 'default', name: '默认智能体', icon: '🤖' };
