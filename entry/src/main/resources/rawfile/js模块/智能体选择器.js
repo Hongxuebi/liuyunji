@@ -1,34 +1,41 @@
 // 智能体选择器.js - 智能体选择UI + 添加新智能体
 window.创建智能体选择器UI = async function() {
-  window._调试面板('选择器: 开始');
-  // 挂载到左侧区
-  const 左侧区 = document.querySelector('.左侧区');
-  window._调试面板('左侧区: ' + (!!左侧区));
-  if (!左侧区) { window._调试面板('左侧区不存在!'); return; }
-
-  if (!window.获取智能体列表) {
-    console.warn('获取智能体列表函数未定义，稍后重试');
-    setTimeout(window.创建智能体选择器UI, 500);
-    return;
-  }
-
-  let 智能体列表 = [];
   try {
-    智能体列表 = await window.获取智能体列表();
-    window._调试面板('智能体列表: ' + (智能体列表?.length || 0));
-  } catch (e) {
-    window._调试面板('获取列表失败: ' + String(e));
-  }
-  if (!智能体列表 || !Array.isArray(智能体列表)) 智能体列表 = [];
+    window._调试面板('选择器: 开始');
+    // 挂载到左侧区
+    const 左侧区 = document.querySelector('.左侧区');
+    window._调试面板('左侧区: ' + (!!左侧区));
+    if (!左侧区) { window._调试面板('左侧区不存在!'); return; }
 
-  const 当前ID = window.当前智能体ID ? window.当前智能体ID() : 'default';
-  const 当前智能体 = 智能体列表.find(a => a.id === 当前ID) || { id: 'default', name: '默认智能体', icon: '🤖' };
+    window._调试面板('step1: 检查获取智能体列表');
+    if (!window.获取智能体列表) {
+      window._调试面板('获取智能体列表函数未定义，稍后重试');
+      setTimeout(window.创建智能体选择器UI, 500);
+      return;
+    }
+    window._调试面板('step2: 开始获取列表');
 
-  更新抽屉头像(当前智能体);
+    let 智能体列表 = [];
+    try {
+      智能体列表 = await window.获取智能体列表();
+      window._调试面板('智能体列表: ' + (智能体列表?.length || 0));
+    } catch (e) {
+      window._调试面板('获取列表失败: ' + String(e));
+    }
+    if (!智能体列表 || !Array.isArray(智能体列表)) 智能体列表 = [];
 
-  更新抽屉头像(当前智能体);
+    window._调试面板('step3: 列表长度=' + 智能体列表.length);
+    const 当前ID = window.当前智能体ID ? window.当前智能体ID() : 'default';
+    const 当前智能体 = 智能体列表.find(a => a.id === 当前ID) || { id: 'default', name: '默认智能体', icon: '🤖' };
 
-  if (document.querySelector('.智能体选择器')) { window._调试面板('选择器已存在，跳过'); return; }
+    window._调试面板('step4: 当前智能体=' + 当前智能体.name);
+    更新抽屉头像(当前智能体);
+    更新抽屉头像(当前智能体);
+
+    window._调试面板('step5: 检查是否已存在');
+    if (document.querySelector('.智能体选择器')) { window._调试面板('选择器已存在，跳过'); return; }
+
+    window._调试面板('step6: 开始创建DOM');
 
   const 选择器容器 = document.createElement('div');
   选择器容器.className = '智能体选择器';
