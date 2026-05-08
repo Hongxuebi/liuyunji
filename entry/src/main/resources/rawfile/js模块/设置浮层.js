@@ -22,10 +22,16 @@ window.绑定设置浮层 = function() {
   if (!浮层) return;
   
   if (关闭按钮) {
-    关闭按钮.addEventListener('click', () => { 浮层.style.display = 'none'; });
+    关闭按钮.addEventListener('click', () => {
+      浮层.style.display = 'none';
+      if (window._解锁滚动) window._解锁滚动();
+    });
   }
   浮层.addEventListener('click', (e) => {
-    if (e.target === 浮层) 浮层.style.display = 'none';
+    if (e.target === 浮层) {
+      浮层.style.display = 'none';
+      if (window._解锁滚动) window._解锁滚动();
+    }
   });
   
   // 主题选择器

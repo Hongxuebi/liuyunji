@@ -82,6 +82,7 @@ async function 打开创建后权限设置(智能体ID, 名称, 图标) {
   `;
 
   document.body.appendChild(遮罩);
+  if (window._锁定滚动) window._锁定滚动();
 
   // ===== 选项切换逻辑 =====
   const 选项列表 = 遮罩.querySelectorAll('.智能体权限向导-选项');
@@ -121,6 +122,7 @@ async function 打开创建后权限设置(智能体ID, 名称, 图标) {
   // ===== 按钮事件 =====
   function 关闭() {
     document.body.removeChild(遮罩);
+    if (window._解锁滚动) window._解锁滚动();
   }
 
   遮罩.querySelector('.智能体权限向导-关闭').onclick = 关闭;
@@ -243,6 +245,7 @@ function 打开删除智能体向导(智能体ID, 名称, 图标) {
     `;
 
     document.body.appendChild(遮罩);
+    if (window._锁定滚动) window._锁定滚动();
 
     const 选项列表 = 遮罩.querySelectorAll('.智能体权限向导-选项');
     let 删除文件夹 = false;
@@ -258,6 +261,7 @@ function 打开删除智能体向导(智能体ID, 名称, 图标) {
 
     function 关闭() {
       document.body.removeChild(遮罩);
+      if (window._解锁滚动) window._解锁滚动();
     }
 
     遮罩.querySelector('.智能体权限向导-关闭').onclick = 关闭;

@@ -222,7 +222,7 @@ window._自定义输入 = function(提示文字, 默认值) {
     确认按钮.textContent = '确认';
     确认按钮.style.cssText = 'padding:0.5rem 1.2rem;border:none;border-radius:0.5rem;background:var(--强调色,#4F46E5);color:#fff;cursor:pointer;font-size:0.9rem;';
 
-    const 关闭 = (值) => { 遮罩.remove(); resolve(值); };
+    const 关闭 = (值) => { 遮罩.remove(); if (window._解锁滚动) window._解锁滚动(); resolve(值); };
     取消按钮.onclick = () => 关闭(null);
     确认按钮.onclick = () => 关闭(输入框.value);
     输入框.onkeydown = (e) => { if (e.key === 'Enter') 关闭(输入框.value); };
@@ -232,6 +232,7 @@ window._自定义输入 = function(提示文字, 默认值) {
     对话框.append(提示, 输入框, 按钮区);
     遮罩.append(对话框);
     document.body.append(遮罩);
+    if (window._锁定滚动) window._锁定滚动();
     setTimeout(() => 输入框.focus(), 100);
   });
 };
@@ -260,7 +261,7 @@ window._自定义确认 = function(提示文字, 确认按钮文字 = '确定', 
     确认按钮.textContent = 确认按钮文字;
     确认按钮.style.cssText = 'padding:0.5rem 1.2rem;border:none;border-radius:0.5rem;background:#dc2626;color:#fff;cursor:pointer;font-size:0.9rem;';
 
-    const 关闭 = (值) => { 遮罩.remove(); resolve(值); };
+    const 关闭 = (值) => { 遮罩.remove(); if (window._解锁滚动) window._解锁滚动(); resolve(值); };
     取消按钮.onclick = () => 关闭(false);
     确认按钮.onclick = () => 关闭(true);
     遮罩.onclick = (e) => { if (e.target === 遮罩) 关闭(false); };
@@ -269,6 +270,25 @@ window._自定义确认 = function(提示文字, 确认按钮文字 = '确定', 
     对话框.append(提示, 按钮区);
     遮罩.append(对话框);
     document.body.append(遮罩);
+    if (window._锁定滚动) window._锁定滚动();
     确认按钮.focus();
   });
+};
+
+// ========== 滚动穿透防护工具 ==========
+// 在模态浮层打开时锁定主内容区滚动，关闭时解锁
+window._锁定滚动 = function() {
+  const 主内容区 = document.getElementById('主内容区');
+  if (主内容区 && !主内容区.dataset._原Overflow) {
+    主内容区.dataset._原Overflow = 主内容区.style.overflow || '';
+    主内容区.style.overflow = 'hidden';
+  }
+};
+
+window._解锁滚动 = function() {
+  const 主内容区 = document.getElementById('主内容区');
+  if (主内容区 && 主内容区.dataset._原Overflow !== undefined) {
+    主内容区.style.overflow = 主内容区.dataset._原Overflow;
+    delete 主内容区.dataset._原Overflow;
+  }
 };

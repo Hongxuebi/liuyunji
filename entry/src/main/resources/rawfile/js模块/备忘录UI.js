@@ -26,7 +26,7 @@ window.绑定备忘录UI = function() {
     const 遮罩 = document.createElement('div');
     遮罩.id = '整理确认卡片';
     遮罩.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;display:flex;align-items:center;justify-content:center;';
-    遮罩.onclick = (e) => { if (e.target === 遮罩) 遮罩.remove(); };
+    遮罩.onclick = (e) => { if (e.target === 遮罩) { 遮罩.remove(); if (window._解锁滚动) window._解锁滚动(); } };
     const 卡片 = document.createElement('div');
     卡片.style.cssText = 'background:var(--背景色, white);border-radius:16px;padding:24px;max-width:320px;width:85%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
     卡片.onclick = (e) => e.stopPropagation();
@@ -45,9 +45,11 @@ window.绑定备忘录UI = function() {
     `;
     遮罩.appendChild(卡片);
     document.body.appendChild(遮罩);
-    document.getElementById('整理确认取消').onclick = () => 遮罩.remove();
+    if (window._锁定滚动) window._锁定滚动();
+    document.getElementById('整理确认取消').onclick = () => { 遮罩.remove(); if (window._解锁滚动) window._解锁滚动(); };
     document.getElementById('整理确认开始').onclick = async () => {
       遮罩.remove();
+      if (window._解锁滚动) window._解锁滚动();
       if (window.开始批量整理) window.开始批量整理();
     };
   };

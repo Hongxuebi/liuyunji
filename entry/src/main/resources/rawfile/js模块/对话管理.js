@@ -108,15 +108,22 @@ function 显示压缩对话框() {
       <div class="压缩对话框描述">当前上下文已使用 ${百分比}%（${已用} / ${总量} tokens）</div>
       <div class="压缩对话框说明">AI 将总结之前的对话内容，生成一条摘要替换原始历史。压缩后从此处重新计数，但摘要会保存下来。</div>
       <div class="压缩对话框按钮组">
-        <button class="压缩对话框按钮 取消" onclick="document.getElementById('压缩确认对话框').remove()">取消</button>
+        <button class="压缩对话框按钮 取消" id="压缩取消按钮">取消</button>
         <button class="压缩对话框按钮 确认" id="确认压缩按钮">压缩</button>
       </div>
     </div>
   `;
   document.body.appendChild(遮罩);
+  if (window._锁定滚动) window._锁定滚动();
+
+  document.getElementById('压缩取消按钮').addEventListener('click', () => {
+    遮罩.remove();
+    if (window._解锁滚动) window._解锁滚动();
+  });
 
   document.getElementById('确认压缩按钮').addEventListener('click', async () => {
     遮罩.remove();
+    if (window._解锁滚动) window._解锁滚动();
     await 执行上下文压缩();
   });
 }
@@ -1749,8 +1756,11 @@ window.显示删除会话确认 = function(会话ID) {
     </div>
   `;
   document.body.appendChild(遮罩);
+  if (window._锁定滚动) window._锁定滚动();
   
-  遮罩.querySelector('.确认卡片-取消').addEventListener('click', () => 遮罩.remove());
+  function 移除遮罩() { 遮罩.remove(); if (window._解锁滚动) window._解锁滚动(); }
+  
+  遮罩.querySelector('.确认卡片-取消').addEventListener('click', 移除遮罩);
   遮罩.querySelector('.确认卡片-确认').addEventListener('click', () => {
     const 智能体ID = window.当前智能体ID ? window.当前智能体ID() : 'default';
     const 会话列表 = 所有会话列表[智能体ID] || [];
@@ -1778,11 +1788,11 @@ window.显示删除会话确认 = function(会话ID) {
       渲染会话列表();
     }
     
-    遮罩.remove();
+    移除遮罩();
   });
   
   遮罩.addEventListener('click', (e) => {
-    if (e.target === 遮罩) 遮罩.remove();
+    if (e.target === 遮罩) 移除遮罩();
   });
 };
 
