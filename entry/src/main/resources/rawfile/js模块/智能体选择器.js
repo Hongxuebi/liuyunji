@@ -1,8 +1,8 @@
 // 智能体选择器.js - 智能体选择UI + 添加新智能体
 window.创建智能体选择器UI = async function() {
-  // 挂载到标签页容器之后，作为顶部栏中间的子元素
-  const 标签页容器 = document.querySelector('.标签页容器');
-  if (!标签页容器) return;
+  // 挂载到左侧区
+  const 左侧区 = document.querySelector('.左侧区');
+  if (!左侧区) return;
 
   if (!window.获取智能体列表) {
     console.warn('获取智能体列表函数未定义，稍后重试');
@@ -41,9 +41,9 @@ window.创建智能体选择器UI = async function() {
 
   选择器容器.appendChild(选择按钮);
   选择器容器.appendChild(下拉菜单);
-  // 插入到标签页容器之后（兄弟关系）
-  // 挂到标签页容器内部（作为子元素，和按钮并列）
-  标签页容器.appendChild(选择器容器);
+  // 插入到左侧区
+  // 挂到左侧区
+  左侧区.appendChild(选择器容器);
 
   function 渲染下拉菜单(列表, 当前选ID) {
     下拉菜单.innerHTML = '';
