@@ -35,7 +35,9 @@ function 初始化卡片滑动() {
     
     const 操作栏按钮 = 容器.querySelectorAll('.操作栏按钮');
     操作栏按钮.forEach(按钮 => {
+      按钮.removeEventListener('touchend', 操作栏触控处理);
       按钮.removeEventListener('click', 操作栏点击处理);
+      按钮.addEventListener('touchend', 操作栏触控处理);
       按钮.addEventListener('click', 操作栏点击处理);
     });
     
@@ -63,9 +65,24 @@ function 复选框点击处理(e) {
   window.多选状态?.切换选中(id);
 }
 
+// touchend 处理：在触控屏上直接响应，绕过 click 合成延迟
+function 操作栏触控处理(e) {
+  // 防止与 click 重复触发：touch 设备的 touchend 后浏览器会合成 click
+  e.preventDefault();
+  e.stopPropagation();
+  // 展开状态下，确认没有被卡片 touch 监听收起
+  // touchend 直接在按钮上触发，不会冒泡到卡片的 touchstart
+  实际处理操作栏操作(e.currentTarget);
+}
+
 function 操作栏点击处理(e) {
   e.stopPropagation();
-  const 按钮 = e.currentTarget;
+  // touch 设备上由 touchend 处理，跳过 click 避免重复
+  if ('ontouchstart' in window) return;
+  实际处理操作栏操作(e.currentTarget);
+}
+
+function 实际处理操作栏操作(按钮) {
   const action = 按钮.dataset.action;
   const 容器 = 按钮.closest('.备忘录卡片滑动容器');
   if (!容器) return;
@@ -80,14 +97,23 @@ function 操作栏点击处理(e) {
     case 'move': {
       const 待移动备忘录 = (window._备忘录数据源 || []).find(m => m.id === id);
       const 当前文件夹 = 待移动备忘录?.文件夹 || '未分类';
-      const 所有文件夹 = window._获取所有文件夹列表 ? window._获取所有文件夹列表().map(f => f.名称) : ['未分类'];
-      // 用自定义对话框替代 prompt()（鸿蒙 WebView 屏蔽 prompt）
-      window._自定义输入(`移动「${待移动备忘录?.标题?.slice(0, 20) || id}」\n\n当前：${当前文件夹}\n\n输入目标文件夹：\n\n可用：${所有文件夹.join('、')}`, 当前文件夹).then(目标文件夹 => {
-        if (!目标文件夹) return;
-        if (!所有文件夹.includes(目标文件夹)) { alert(`文件夹「${目标文件夹}」不存在`); return; }
-        if (目标文件夹 === 当前文件夹) { alert('已在该文件夹中'); return; }
-        window.备忘录管理器.updateMemo(id, { 文件夹: 目标文件夹 }).then(() => { if (window.渲染备忘录列表) window.渲染备忘录列表(); });
-      });
+      const 全文件夹列表 = window._获取所有文件夹列表 ? window._获取所有文件夹列表() : [];
+      const 所有文件夹 = 全文件夹列表.filter(f => f.名称 !== '全部').map(f => f.名称);
+      // 调用文件夹选择对话框（与编辑器一致，可选择而非手工输入）
+      if (window._显示文件夹选择对话框) {
+        window._显示文件夹选择对话框(所有文件夹, `移动「${待移动备忘录?.标题?.slice(0, 20) || id}」`).then(目标文件夹 => {
+          if (!目标文件夹 || 目标文件夹 === 当前文件夹) return;
+          window.备忘录管理器.updateMemo(id, { 文件夹: 目标文件夹 }).then(() => { if (window.渲染备忘录列表) window.渲染备忘录列表(); });
+        });
+      } else {
+        // 降级：用自定义对话框替代 prompt()（鸿蒙 WebView 屏蔽 prompt）
+        window._自定义输入(`移动「${待移动备忘录?.标题?.slice(0, 20) || id}」\n\n当前：${当前文件夹}\n\n输入目标文件夹：\n\n可用：${所有文件夹.join('、')}`, 当前文件夹).then(目标文件夹 => {
+          if (!目标文件夹) return;
+          if (!所有文件夹.includes(目标文件夹)) { alert(`文件夹「${目标文件夹}」不存在`); return; }
+          if (目标文件夹 === 当前文件夹) { alert('已在该文件夹中'); return; }
+          window.备忘录管理器.updateMemo(id, { 文件夹: 目标文件夹 }).then(() => { if (window.渲染备忘录列表) window.渲染备忘录列表(); });
+        });
+      }
       break;
     }
     case 'delete': window._删除备忘录(id); break;
@@ -114,8 +140,11 @@ function 开始滑动(e) {
   const 卡片 = e.currentTarget;
   const 容器 = 卡片.closest('.备忘录卡片滑动容器');
   
-  // ★ 已展开的卡片，任何触摸/点击都只收起，不再触发滑动
-  if (容器.classList.contains('展开')) { 收起卡片(容器); return; }
+  // ★ 已展开的卡片：触摸在操作栏按钮上时不收起（让 click 正常处理），其余触摸收起
+  if (容器.classList.contains('展开')) {
+    if (e.target.closest('.操作栏按钮')) return;
+    收起卡片(容器); return;
+  }
   
   是否发生了滑动 = false;
   已判定为竖滚 = false;

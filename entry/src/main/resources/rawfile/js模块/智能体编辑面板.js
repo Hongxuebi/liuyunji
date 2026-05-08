@@ -754,11 +754,17 @@ async function 切换收藏(智能体ID, 收藏) {
 // ================================================================
 async function 导出智能体JSON(智能体ID, 配置) {
   const 配置数据 = await 构建导出JSON(智能体ID, 配置);
+  const 文件名 = `${(配置?.name || 智能体ID).replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_')}_智能体.json`;
+  // 走统一下载入口（鸿蒙原生优先）
+  if (window._触发下载) {
+    window._触发下载(JSON.stringify(配置数据, null, 2), 文件名);
+    return;
+  }
   const blob = new Blob([JSON.stringify(配置数据, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${(配置?.name || 智能体ID).replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_')}_智能体.json`;
+  a.download = 文件名;
   a.click();
   URL.revokeObjectURL(url);
 }

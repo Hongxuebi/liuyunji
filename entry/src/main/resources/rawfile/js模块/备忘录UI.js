@@ -1466,6 +1466,20 @@ ${deadlineDisplay}`;
 
   // ========== 下载图片函数 ==========
   function 下载图片(base64数据, 文件名) {
+    // 走统一下载入口（鸿蒙原生优先）
+    if (window.nativeBridge && window.nativeBridge.saveFile) {
+      const parts = base64数据.split(',');
+      const base64 = parts[1] || parts[0];
+      window.nativeBridge.saveFile(文件名, base64).then(res => {
+        const 结果 = JSON.parse(res);
+        if (!结果.success) {
+          console.warn('[下载图片] 保存未完成:', 结果.error);
+        }
+      }).catch(e => {
+        console.warn('[下载图片] 原生保存异常:', e);
+      });
+      return;
+    }
     const link = document.createElement('a');
     link.href = base64数据;
     link.download = 文件名;
@@ -1569,6 +1583,20 @@ ${deadlineDisplay}`;
     const 文件名 = 附件元素.dataset.fileName;
     const 文件数据 = 附件元素.dataset.fileData;
 
+    // 走统一下载入口（鸿蒙原生优先）
+    if (window.nativeBridge && window.nativeBridge.saveFile) {
+      const parts = 文件数据.split(',');
+      const base64 = parts[1] || 文件数据;
+      window.nativeBridge.saveFile(文件名, base64).then(res => {
+        const 结果 = JSON.parse(res);
+        if (!结果.success) {
+          console.warn('[下载附件] 保存未完成:', 结果.error);
+        }
+      }).catch(e => {
+        console.warn('[下载附件] 原生保存异常:', e);
+      });
+      return;
+    }
     const link = document.createElement('a');
     link.href = 文件数据;
     link.download = 文件名;

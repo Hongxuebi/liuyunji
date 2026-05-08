@@ -117,10 +117,73 @@ function _构建导出包(memos, { 标签 = '全部' } = {}) {
 /**
  * 触发文件下载
  */
+let _触发下载_保存锁 = false;
+
+/** 过滤文件名中不安全字符 */
+function _安全文件名(name) {
+  return name.replace(/[/\\:*?"<>|]/g, '_');
+}
+
 function _触发下载(内容, 文件名, MIME = 'application/json;charset=utf-8') {
-  // 如果内容已经是字符串，直接写入；否则格式化为JSON
+  if (_触发下载_保存锁) {
+    console.warn('[下载] 正在保存中，跳过');
+    return;
+  }
+  _触发下载_保存锁 = true;
+  const 安全文件名 = _安全文件名(文件名);
   const 输出内容 = typeof 内容 === 'string' ? 内容 : JSON.stringify(内容, null, 2);
-  const blob = new Blob([输出内容], { type: MIME });
+  const 完成 = () => { _触发下载_保存锁 = false; };
+  // 鸿蒙原生：文本文件走 saveTextFile（避免 JS 侧自己编 base64）
+  if (window.nativeBridge && window.nativeBridge.saveTextFile) {
+    window.nativeBridge.saveTextFile(安全文件名, 输出内容).then(res => {
+      完成();
+      try {
+        const 结果 = JSON.parse(res);
+        if (!结果.success) {
+          console.warn('[下载] 保存未完成:', 结果.error);
+          _触发下载降级(输出内容, 安全文件名, MIME);
+        }
+      } catch {
+        console.warn('[下载] 解析返回结果失败');
+        _触发下载降级(输出内容, 安全文件名, MIME);
+      }
+    }).catch(e => {
+      完成();
+      console.warn('[下载] 原生保存异常:', e);
+      _触发下载降级(输出内容, 安全文件名, MIME);
+    });
+    return;
+  }
+  // 降级到 saveFile（base64 方式，兼容旧版本）
+  if (window.nativeBridge && window.nativeBridge.saveFile) {
+    const base64 = btoa(unescape(encodeURIComponent(输出内容)));
+    window.nativeBridge.saveFile(安全文件名, base64).then(res => {
+      完成();
+      try {
+        const 结果 = JSON.parse(res);
+        if (!结果.success) {
+          console.warn('[下载] 保存未完成:', 结果.error);
+          _触发下载降级(输出内容, 安全文件名, MIME);
+        }
+      } catch {
+        _触发下载降级(输出内容, 安全文件名, MIME);
+      }
+    }).catch(() => {
+      完成();
+      _触发下载降级(输出内容, 安全文件名, MIME);
+    });
+    return;
+  }
+  完成();
+  // 桌面降级：Blob + a 标签下载
+  _触发下载降级(输出内容, 安全文件名, MIME);
+}
+
+/**
+ * 桌面端降级下载方案
+ */
+function _触发下载降级(内容, 文件名, MIME) {
+  const blob = new Blob([内容], { type: MIME });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -192,6 +255,27 @@ async function _导出为ZIP(memos, 文件名) {
   
   // 生成ZIP并下载
   const blob = await zip.generateAsync({ type: 'blob' });
+  // 鸿蒙原生：通过 NativeBridge 保存文件
+  if (window.nativeBridge && window.nativeBridge.saveFile) {
+    // blob → base64
+    const reader = new FileReader();
+    const base64 = await new Promise((resolve) => {
+      reader.onload = () => {
+        const result = reader.result; // data:...;base64,xxxx
+        const parts = result.split(',');
+        resolve(parts[1] || parts[0]);
+      };
+      reader.readAsDataURL(blob);
+    });
+    const 结果 = await window.nativeBridge.saveFile(`${文件名}.zip`, base64);
+    const 响应 = JSON.parse(结果);
+    if (!响应.success) {
+      console.warn('[导出] 保存未完成:', 响应.error);
+      _触发下载降级('', `${文件名}.zip`, 'application/zip');
+    }
+    return;
+  }
+  // 桌面降级
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

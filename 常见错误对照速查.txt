@@ -1,6 +1,6 @@
 # 常见错误对照速查表（流云记项目）
 
-> 最后更新：2026-05-07（v0.3）
+> 最后更新：2026-05-08（v0.7）
 > 用途：流云记开发过程中快速排查问题
 
 ---
@@ -18,6 +18,7 @@
 | WV-07 | 卡片竖滚不灵敏/延迟 | 手指划了但页面不跟手 | JS touchmove passive:false + direction-lock，浏览器等 JS 完才滚 | 全改 passive:true + CSS touch-action:pan-y，竖滚交浏览器原生 |
 | WV-08 | 智能体编辑弹窗按钮消失 | 保存/取消按钮看不见 | inline style 被其他 CSS 覆盖 | 加 !important 或 inline style 显式写死 |
 | WV-09 | 左滑后点击空白误入编辑 | 收起卡片时跳进编辑页面 | 滑动结束标记立即重置 + 展开态无保护 | 滑动保护中 300ms + click 处理器查展开状态 |
+| WV-10 | 展开卡片上操作栏按钮要点两次 | 点击📁需要两次才能打开对话框 | 触摸屏 touchstart → touchend → click 链中，touchstart 触发了`开始滑动`中的`收起卡片`，操作栏消失后浏览器合成 click 时找不到正确目标 | `开始滑动`中操作栏按钮区域跳过收起逻辑：`if (e.target.closest('.操作栏按钮')) return;` |
 
 ---
 
@@ -54,6 +55,13 @@
 | AK-03 | 对象字面量必标注类型 | `return {a:1}` 报错 | ArkTS 要求类型标注 | 加 `as Interface` 或显式类型声明 |
 | AK-04 | var 被禁 | `var x = 1` 报错 | ArkTS 禁止 var | 改用 let/const |
 | AK-05 | throw 类型限制 | `throw new BusinessError(...)` 编译报错 | throw 必须用 Error 类型 | `throw new Error(e.message)` 或只 log 不抛 |
+| AK-06 | catch 子句写具体类型 | `catch (e: Error)` 编译报错 `arkts-no-types-in-catch` | ArkTS 严格模式禁止 catch 子句带类型注解 | `catch (e)` 无类型注解；错误信息安全提取：`String(e)` 或 `(e as Record<string,Object>)['message']` |
+| AK-07 | `in` 操作符不支持 | `'message' in e` 报错 `arkts-no-in` | ArkTS 禁止 `in` 操作符 | 改用 `instanceof` 或 `as` 断言 + try 包裹 |
+| AK-08 | any/unknown 被禁 | `e: unknown` / `let x: any` 报错 `arkts-no-any-unknown` | ArkTS 严格模式禁止 any 和 unknown 类型 | 用 `Object` 或显式接口类型替代 |
+| AK-09 | // @ts-ignore 被禁 | 编译报错 `arkts-strict-typing-required` | ArkTS 不允许任何行内类型检查绕开 | 删除该行，改用显式 `as` 类型断言替代 |
+| AK-10 | 交叉类型被禁 | `A & B` 报错 `arkts-no-intersection-types` | ArkTS 禁止交叉类型 | 定义单接口合并所有字段，或用接口 `extends` 继承 |
+| AK-11 | 对象字面量作类型 | `{ a: string }` 作为类型注解报错 | ArkTS 不允许对象字面量直接作类型 | 必须先用 `interface` 或 `type` 定义命名类型 |
+| AK-12 | Function may throw 误报 | 已在 try 内仍报 `Special handling required` | ArkTS 编译器对 API `@throws` 标记的严格检查；try 包了但编译器仍要求函数签名也处理 | 加 const 中间变量再调方法（如 `const ctx: Type = this.field; ctx.method()`）；若还不通过，DevEco 手动标记或改 `build-profile.json5` 的 arkOptions |
 
 ---
 

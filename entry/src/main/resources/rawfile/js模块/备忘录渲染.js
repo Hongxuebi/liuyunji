@@ -382,7 +382,7 @@ async function 处理删除文件夹(文件夹名) {
 }
 
 // 显示文件夹选择对话框（返回Promise）
-function 显示文件夹选择对话框(文件夹列表, 标题) {
+window._显示文件夹选择对话框 = function 显示文件夹选择对话框(文件夹列表, 标题) {
   return new Promise((resolve) => {
     // 创建遮罩和对话框
     const 遮罩 = document.createElement('div');

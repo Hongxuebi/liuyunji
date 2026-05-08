@@ -275,11 +275,16 @@ window._自定义确认 = function(提示文字, 确认按钮文字 = '确定', 
   });
 };
 
-// ========== 滚动穿透防护工具 ==========
+// ========== 滚动穿透防护工具（带计数器，支持嵌套调用）==========
 // 在模态浮层打开时锁定主内容区滚动，关闭时解锁
+// 每打开一个模态 +1，关闭一个 -1，计数归零才真正解锁
+if (!window.__滚动锁计数) window.__滚动锁计数 = 0;
+
 window._锁定滚动 = function() {
   const 主内容区 = document.getElementById('主内容区');
-  if (主内容区 && !主内容区.dataset._原Overflow) {
+  if (!主内容区) return;
+  window.__滚动锁计数++;
+  if (window.__滚动锁计数 === 1) {
     主内容区.dataset._原Overflow = 主内容区.style.overflow || '';
     主内容区.style.overflow = 'hidden';
   }
@@ -287,7 +292,9 @@ window._锁定滚动 = function() {
 
 window._解锁滚动 = function() {
   const 主内容区 = document.getElementById('主内容区');
-  if (主内容区 && 主内容区.dataset._原Overflow !== undefined) {
+  if (!主内容区) return;
+  window.__滚动锁计数 = Math.max(0, window.__滚动锁计数 - 1);
+  if (window.__滚动锁计数 === 0 && 主内容区.dataset._原Overflow !== undefined) {
     主内容区.style.overflow = 主内容区.dataset._原Overflow;
     delete 主内容区.dataset._原Overflow;
   }
