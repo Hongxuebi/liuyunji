@@ -403,10 +403,6 @@ ${本批.map(m => `${m.id} | ${m.标题} | ${m.文件夹 || '默认'} | ${(m.标
         if (原备忘录 && 原备忘录.标签) 标签 = 原备忘录.标签;
       }
       
-      // 按钮闪光反馈
-      const 保存按钮 = document.getElementById('保存按钮');
-      if (保存按钮) { 保存按钮.classList.add('闪光'); setTimeout(() => 保存按钮.classList.remove('闪光'), 200); }
-      
       if (window.保存备忘录) {
         window.保存备忘录(标题, 内容, 文件夹, 标签);
       } else {
@@ -1438,7 +1434,9 @@ ${deadlineDisplay}`;
     const 图片URL = imgElement.src;
     const 预览容器 = document.createElement('div');
     预览容器.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-    预览容器.onclick = () => 预览容器.remove();
+    预览容器.onclick = () => { 预览容器.remove(); if (window._解锁滚动) window._解锁滚动(); };
+
+    if (window._锁定滚动) window._锁定滚动();
 
     const 预览图片 = document.createElement('img');
     预览图片.src = 图片URL;
@@ -1460,6 +1458,7 @@ ${deadlineDisplay}`;
     关闭按钮.onclick = (e) => {
       e.stopPropagation();
       预览容器.remove();
+      if (window._解锁滚动) window._解锁滚动();
     };
 
     预览容器.appendChild(预览图片);
