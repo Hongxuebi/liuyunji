@@ -230,8 +230,9 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
 .char-select-subtitle { font-size:13px; color:rgba(255,255,255,0.3); text-align:center; margin-bottom:24px; }
 .call-bg { position:absolute; inset:0; z-index:0; background:radial-gradient(ellipse 120% 60% at 50% 20%, rgba(59,130,246,0.15) 0%, transparent 70%), radial-gradient(ellipse 80% 50% at 20% 70%, rgba(139,92,246,0.10) 0%, transparent 60%), radial-gradient(ellipse 70% 50% at 80% 65%, rgba(236,72,153,0.08) 0%, transparent 55%), linear-gradient(180deg,#0a0a0f 0%,#101018 40%,#0f0f1a 100%); }
 .status-bar { position:relative; z-index:10; height:54px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; padding-top:env(safe-area-inset-top,0); flex-shrink:0; }
-.status-left { display:flex; align-items:center; gap:8px; }
-.status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 8px rgba(34,197,94,0.5); animation:pulse 2s infinite; display:var(--dot-display,block); }
+.status-left { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+.status-role-name { font-size:11px; color:rgba(255,255,255,0.35); letter-spacing:1px; }
+.status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 8px rgba(34,197,94,0.5); animation:pulse 2s infinite; display:var(--dot-display,block); flex-shrink:0; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 .status-text { font-size:13px; color:rgba(255,255,255,0.6); }
 .hero-area { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:0; overflow:hidden; }
@@ -803,7 +804,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
   </div>
 
   <div class="status-bar">
-    <div class="status-left"><div class="status-dot"></div><span class="status-text" id="statusText">连接中...</span></div>
+    <div class="status-left"><div style="display:flex;align-items:center;gap:8px"><div class="status-dot"></div><span class="status-text" id="statusText">连接中...</span></div><span class="status-role-name" id="roleName">加载中...</span></div>
     <div class="status-right">
       <div class="action-toggle-btn" id="actionToggleBtn" title="表情与动作">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
@@ -817,10 +818,6 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
 
   <div class="hero-area">
     <div class="live2d-container" id="live2dContainer"><canvas id="live2dCanvas"></canvas></div>
-    <div class="role-title" id="roleTitle"></div>
-    <div class="role-name" id="roleName">Loading...</div>
-    <div class="role-status" id="roleStatus">加载模型中...</div>
-    <div class="call-timer" id="callTimer">--:--</div>
     <!-- 面部聚焦缩放 -->
     <div class="face-zoom-btn" id="faceZoomBtn" title="面部聚焦">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="9" y1="11" x2="13" y2="11"/><line x1="11" y1="9" x2="11" y2="13"/></svg>
@@ -837,7 +834,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
     <div class="caption-interim" id="interimCaption" style="display:none;"></div>
   </div>
 
-  <div class="chat-toggle-btn" id="toggleChatBtn">显示对话</div>
+  <div class="chat-toggle-btn" id="toggleChatBtn"><span id="toggleChatLabel">显示对话</span><span class="chat-toggle-status" id="roleStatus"></span></div>
 
   <div class="action-bar">
     <div class="secondary-btn-circle" id="keyboardBtn">
@@ -1751,7 +1748,7 @@ function selectCharacter(id) {
   document.documentElement.style.setProperty('--accent-color-dark', char.accentColor + 'cc');
   window._currentCharDisplayName = getCharacterDisplayName(char);
   $('roleName').textContent = getCharacterDisplayName(char);
-  $('roleTitle').textContent = char.title;
+  // $('roleTitle').textContent = char.title;  // roleTitle 已删除
 
   // 确保 overlay 显示加载状态
   $('loadingOverlay').classList.remove('hide');
@@ -1943,7 +1940,7 @@ function startRecordingUI() {
   $('micBtn').classList.add('recording');
   $('micWaveBars').classList.add('active');
   $('roleStatus').textContent = '🎤 正在听你说...';
-  $('roleStatus').className = 'role-status recording';
+  $('roleStatus').className = 'chat-toggle-status recording';
   $('interimCaption').textContent = '👆 按住说话，松开发送';
   $('interimCaption').style.display = 'block';
   setMouth(0.08);
@@ -1956,7 +1953,7 @@ function stopRecordingUI() {
   $('interimCaption').style.display = 'none';
   if (connected) {
     $('roleStatus').textContent = '等待说话';
-    $('roleStatus').className = 'role-status listening';
+    $('roleStatus').className = 'chat-toggle-status listening';
   }
   setMouth(0);
 }
@@ -2078,7 +2075,7 @@ async function loadModel() {
       if (savedZoom > 0) { faceZoomLevel = savedZoom; applyFaceZoom(savedZoom); updateFaceZoomBtn(); }
     }
     $('roleStatus').textContent = '等待说话';
-    $('roleStatus').className = 'role-status listening';
+    $('roleStatus').className = 'chat-toggle-status listening';
     connected = true;
     startTimer();
 
@@ -2122,7 +2119,7 @@ async function loadModel() {
     $('loadingOverlay').classList.add('hide');
     $('statusText').textContent = '角色加载异常';
     $('roleStatus').textContent = '可重试或返回重选';
-    $('roleStatus').className = 'role-status';
+    $('roleStatus').className = 'chat-toggle-status';
     $('loadingOverlay').innerHTML = `
       <div style="color:#ef4444;font-size:24px;margin-bottom:8px;">⚠️</div>
       <div style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.6;text-align:center;">
@@ -2344,14 +2341,14 @@ function _autoStartRec() {
     isRecording = true;
     $('micWaveBars').classList.add('active');
     _D.rs.textContent = '🎤 自动对话中...';
-    _D.rs.className = 'role-status recording';
+    _D.rs.className = 'chat-toggle-status recording';
   }, 400);
 }
 
 function finishTtsUI() {
   $('aiCaption').style.display = 'none';
   $('roleStatus').textContent = '等待说话';
-  $('roleStatus').className = 'role-status listening';
+  $('roleStatus').className = 'chat-toggle-status listening';
   var lastAiText = $('aiCaption').textContent;
   if (lastAiText) addChat('ai', lastAiText);
   // ★ 自动对话：AI 说完后自动开始录音
@@ -2384,7 +2381,7 @@ function interruptTts() {
   _ttsActive = false;
   $('aiCaption').style.display = 'none';
   $('roleStatus').textContent = '🎤 请说话';
-  $('roleStatus').className = 'role-status';
+  $('roleStatus').className = 'chat-toggle-status';
   // 将被中断的 AI 文本加入聊天记录（标记为打断）
   var lastAiText = $('aiCaption').textContent || (_lastSpeakText || '');
   if (lastAiText) addChat('ai', '⏸ ' + lastAiText);
@@ -2480,7 +2477,7 @@ function aiSpeak(text) {
   $('interimCaption').style.display = 'none';
   $('userCaption').style.display = 'none';
   $('roleStatus').textContent = 'AI 说话中...';
-  $('roleStatus').className = 'role-status speaking';
+  $('roleStatus').className = 'chat-toggle-status speaking';
   _lastSpeakText = cleanText; _lastSpeakTime = Date.now();
   _stopRequested = false;
   _ttsActive = true;  // 立即标记，不等 onTtsStart 回调（鸿蒙端可能延迟）
@@ -2513,7 +2510,7 @@ function aiSpeak(text) {
 async function callDeepSeek(userMsg) {
   chatHistory.push({ role: 'user', content: userMsg });
   $('roleStatus').textContent = 'AI思考中...';
-  $('roleStatus').className = 'role-status speaking';
+  $('roleStatus').className = 'chat-toggle-status speaking';
   
   if (_lastActions && _lastActions.length > 0) {
     try { stopAllAiMotions(); } catch(e) {}
@@ -2537,7 +2534,7 @@ async function callDeepSeek(userMsg) {
           if (Date.now() - startWait > maxWait) {
             clearInterval(check);
             $('roleStatus').textContent = 'AI回复超时';
-            $('roleStatus').className = 'role-status';
+            $('roleStatus').className = 'chat-toggle-status';
             resolve('抱歉，我刚才走神了，能再说一次吗？');
             return;
           }
@@ -2548,7 +2545,7 @@ async function callDeepSeek(userMsg) {
         // 简化：直接返回，TTS由发送消息内部处理
         clearInterval(check);
         $('roleStatus').textContent = '通话中';
-        $('roleStatus').className = 'role-status';
+        $('roleStatus').className = 'chat-toggle-status';
         resolve(''); // 回复由TTS分流处理，不需要返回值
       });
     }
@@ -2557,7 +2554,7 @@ async function callDeepSeek(userMsg) {
     const apiKey = localStorage.getItem('deepseek_api_key') || '';
     if (!apiKey) {
       $('roleStatus').textContent = '⚙ 未连接AI服务';
-      $('roleStatus').className = 'role-status';
+      $('roleStatus').className = 'chat-toggle-status';
       return '';
     }
     const currentChar = getCharacter(currentCharacterId);
@@ -2579,7 +2576,7 @@ async function callDeepSeek(userMsg) {
   } catch (err) {
     console.error('AI 对话 error:', err);
     $('roleStatus').textContent = '连接失败';
-    $('roleStatus').className = 'role-status';
+    $('roleStatus').className = 'chat-toggle-status';
     return '网络好像有点问题，稍等一下再试试吧～';
   }
 }
@@ -2588,14 +2585,14 @@ async function userListen(userText) {
   $('interimCaption').textContent = '正在思考回复...';
   $('interimCaption').style.display = 'block';
   $('roleStatus').textContent = '思考中...';
-  $('roleStatus').className = 'role-status listening';
+  $('roleStatus').className = 'chat-toggle-status listening';
   setMouth(0.12);
   await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
   $('interimCaption').style.display = 'none';
   const reply = await callDeepSeek(userText);
   if (reply === '_NO_KEY_') {
     $('roleStatus').textContent = '⚙ 未连接AI服务';
-    $('roleStatus').className = 'role-status';
+    $('roleStatus').className = 'chat-toggle-status';
     addChat('ai', '请先配置AI服务才能通话哦~');
     _ttsActive = false;
     finishTtsUI();
@@ -2618,7 +2615,7 @@ function startConv() {
 }
 
 function startTimer() { secs = 0; updateTimer(); timerInt = setInterval(updateTimer, 1000); }
-function updateTimer() { secs++; $('callTimer').textContent = String(Math.floor(secs/60)).padStart(2,'0') + ':' + String(secs%60).padStart(2,'0'); }
+function updateTimer() { secs++; /* callTimer 已删除 */ }
 function stopTimer() { clearInterval(timerInt); }
 
 function addChat(role, text) {
@@ -2778,7 +2775,7 @@ function _onPD(e){
   if(_S.l){ e.preventDefault(); _finishLk(); _D.vb.className='main-mic'; _D.vb.classList.remove('locked-recording','recording','mode-active','btn-hidden'); return; }
   if(_S.p) return;
   // 自动模式开启时，点击mic关闭
-  if(_S.a){ e.preventDefault(); _toggleAM(); _D.vb.className='main-mic'; _D.rs.textContent='等待说话'; _D.rs.className='role-status listening'; $('micWaveBars').classList.remove('active'); return; }
+  if(_S.a){ e.preventDefault(); _toggleAM(); _D.vb.className='main-mic'; _D.rs.textContent='等待说话'; _D.rs.className='chat-toggle-status listening'; $('micWaveBars').classList.remove('active'); return; }
   if(e.type==='touchstart') e.preventDefault();
   // 打断TTS
   if(_ttsActive) interruptTts();
@@ -2798,7 +2795,7 @@ function _onPD(e){
   _S.st=Date.now();
   clearInterval(_S.ti); _S.ti=setInterval(function(){},100);
   _D.rs.textContent='🎤 正在听你说...';
-  _D.rs.className='role-status recording';
+  _D.rs.className='chat-toggle-status recording';
   $('micWaveBars').classList.add('active');
   _vib(15);
   // 启动ASR
@@ -2822,8 +2819,8 @@ function _onPE(e){
     // 取消
     _cleanUI(); stopNativeAsr(); isRecording=false;
     $('interimCaption').style.display='none';
-    _D.rs.textContent='已取消'; _D.rs.className='role-status';
-    setTimeout(function(){ if(!_D.rs.textContent.includes('取消')) return; _D.rs.textContent='等待说话'; _D.rs.className='role-status listening'; },1000);
+    _D.rs.textContent='已取消'; _D.rs.className='chat-toggle-status';
+    setTimeout(function(){ if(!_D.rs.textContent.includes('取消')) return; _D.rs.textContent='等待说话'; _D.rs.className='chat-toggle-status listening'; },1000);
     _resetP();
   } else if(_S.iL){
     // 锁定
@@ -2833,14 +2830,14 @@ function _onPE(e){
     // 模式
     _cleanUI();
     if(!_S.a) _toggleAM();
-    _S.p=false;_S.st=null;_D.rs.textContent='自动对话中';_D.rs.className='role-status speaking';
+    _S.p=false;_S.st=null;_D.rs.textContent='自动对话中';_D.rs.className='chat-toggle-status speaking';
     _resetP();
   } else {
     // 松手发送
     _cleanUI();
     stopNativeAsr();
     isRecording=false;
-    _D.rs.textContent='等待说话'; _D.rs.className='role-status listening';
+    _D.rs.textContent='等待说话'; _D.rs.className='chat-toggle-status listening';
     _resetP();
   }
 }
@@ -2851,7 +2848,7 @@ function _onPC(){
   clearInterval(_S.ti); _S.ti=null;
   _cleanUI(); stopNativeAsr(); isRecording=false;
   _resetP();
-  _D.rs.textContent='已取消'; _D.rs.className='role-status';
+  _D.rs.textContent='已取消'; _D.rs.className='chat-toggle-status';
 }
 
 function _lockPending(){
@@ -2863,7 +2860,7 @@ function _lockPending(){
   _D.hb.classList.remove('btn-hidden');
   _D.kb.classList.add('btn-hidden');_D.sb2.classList.add('btn-hidden');_D.vb.classList.add('btn-hidden');
   _D.rs.textContent='点击🔒发送';
-  _D.rs.className='role-status';
+  _D.rs.className='chat-toggle-status';
   clearInterval(_S.ti); _S.ti=setInterval(_upLT,50);
 }
 
@@ -2876,14 +2873,14 @@ function _finishLk(){
   _D.vb.classList.remove('btn-hidden');
   stopNativeAsr(); isRecording=false;
   if(_S.d<1){
-    _D.rs.textContent='说话时间太短'; _D.rs.className='role-status';
+    _D.rs.textContent='说话时间太短'; _D.rs.className='chat-toggle-status';
   } else {
     var d=Math.min(_S.d,_MX);
     // handleAsrResult 会在 ASR 回调中触发
-    _D.rs.textContent='已发送 ✓'; _D.rs.className='role-status listening';
+    _D.rs.textContent='已发送 ✓'; _D.rs.className='chat-toggle-status listening';
   }
   _S.st=null;
-  _D.rs.textContent='等待说话'; _D.rs.className='role-status listening';
+  _D.rs.textContent='等待说话'; _D.rs.className='chat-toggle-status listening';
   _restoreDefaultBtns();
 }
 
@@ -2898,7 +2895,7 @@ function _toggleAM(){
     // 自动模式：先打断 TTS 再启动 ASR，防止录到 AI 回声
     if (_ttsActive) interruptTts();
     startNativeAsr(); isRecording=true;
-    _D.rs.textContent='自动对话中'; _D.rs.className='role-status speaking';
+    _D.rs.textContent='自动对话中'; _D.rs.className='chat-toggle-status speaking';
   } else {
     // ★ 关闭自动模式：清除定时器 + 停止录音
     clearTimeout(_autoRecTimer); _autoRecTimer = null;
@@ -2912,7 +2909,7 @@ function _toggleAM(){
     if(_D.hb._origHTML){_D.hb.innerHTML=_D.hb._origHTML;_D.hb._origHTML=null;}
     _D.kb.className='secondary-btn-circle';_D.sb2.className='secondary-btn-circle';_D.hb.className='hangup-btn-circle';
     _D.kb.classList.remove('btn-hidden');_D.sb2.classList.remove('btn-hidden');_D.hb.classList.remove('btn-hidden');
-    _D.rs.textContent='等待说话'; _D.rs.className='role-status listening';
+    _D.rs.textContent='等待说话'; _D.rs.className='chat-toggle-status listening';
   }
 }
 
@@ -2944,7 +2941,7 @@ $('hangupBtn').addEventListener('click', () => {
   interruptTts();
   nativeTtsStop();
   $('roleStatus').textContent = '通话已结束';
-  $('roleStatus').className = 'role-status';
+  $('roleStatus').className = 'chat-toggle-status';
   $('statusText').textContent = '已挂断';
   $('aiCaption').style.display = 'none';
   $('interimCaption').style.display = 'none';
@@ -2957,7 +2954,7 @@ $('hangupBtn').addEventListener('click', () => {
 
 $('toggleChatBtn').addEventListener('click', () => {
   $('chatPanel').classList.toggle('open');
-  $('toggleChatBtn').textContent = $('chatPanel').classList.contains('open') ? '隐藏对话' : '显示对话';
+  $('toggleChatLabel').textContent = $('chatPanel').classList.contains('open') ? '隐藏对话' : '显示对话';
 });
 
 $('clearChatBtn').addEventListener('click', () => { $('chatList').innerHTML = ''; addChat('ai', '对话记录已清空'); });
@@ -3026,7 +3023,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!localStorage.getItem('deepseek_api_key')) {
     diag('No API key, showing hint');
     $('roleStatus').textContent = '点击 ⚙ 设置 API Key 开始对话';
-    $('roleStatus').className = 'role-status';
+    $('roleStatus').className = 'chat-toggle-status';
   }
   loadCharacters();
 
@@ -3781,7 +3778,7 @@ window.挂断通话 = function() {
     interruptTts && interruptTts();
     nativeTtsStop && nativeTtsStop();
     $('roleStatus').textContent = '通话已结束';
-    $('roleStatus').className = 'role-status';
+    $('roleStatus').className = 'chat-toggle-status';
     $('statusText').textContent = '已挂断';
     $('aiCaption').style.display = 'none';
     $('interimCaption').style.display = 'none';
