@@ -185,7 +185,7 @@ struct Index {
   private ttsReady: boolean = false;
   // AudioRenderer — 自行播放 PCM，跟随系统媒体音量
   private ttsRenderer: audio.AudioRenderer | null = null;
-  // 累积 PCM 缓冲区，等 onComplete 后一次性播放
+  // 累积 PCM 缓冲区
   private ttsPcmBuffers: ArrayBuffer[] = [];
 
   // ====== ASR 引擎 ======
@@ -266,9 +266,8 @@ struct Index {
           console.info('======== TTS: onStart');
           this.sendToWebView('onTtsStart', '');
         },
-        onComplete: () => {
+        onComplete: (): void => {
           console.info('======== TTS: onComplete');
-          // 合成完成，用 AudioRenderer 播放全部 PCM 数据（播放完成后才会发 onTtsComplete）
           this.playTtsPcm();
         },
         onError: (_requestId: string, _errorCode: number, errorMessage: string) => {
@@ -280,9 +279,10 @@ struct Index {
           this.sendToWebView('onTtsStop', '');
         },
         onData: (requestId: string, audioData: ArrayBuffer): void => {
-          // 累积 PCM 数据
           this.ttsPcmBuffers.push(audioData.slice(0));
-          // 嘴型同步级别计算（用最近一帧）
+          const now = Date.now();
+          if (now - this.lastMouthTime < 16) return;
+          this.lastMouthTime = now;
           try {
             const view = new Int16Array(audioData);
             let sum = 0;
@@ -332,7 +332,7 @@ struct Index {
         requestId: 'tts_' + Date.now().toString(),
         extraParams: {
           speed: speed !== undefined ? speed : 1.0,
-          volume: 0, // 静音引擎自身播放，只通过 onData 获取 PCM 自行用 AudioRenderer 播放
+          volume: 0, // 静音引擎，只通过 onData 获取 PCM
           pitch: pitch !== undefined ? pitch : 1.0,
           queueMode: 0,
         }
@@ -342,68 +342,9 @@ struct Index {
     }
   }
 
-  // 创建 AudioRenderer（PCM 16kHz 单声道 S16LE，跟随系统媒体音量）
-  private async initTtsRenderer(): Promise<audio.AudioRenderer | null> {
-    try {
-      const streamInfo: audio.AudioStreamInfo = {
-        samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_16000,
-        channels: audio.AudioChannel.CHANNEL_1,
-        sampleFormat: audio.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
-        encodingType: audio.AudioEncodingType.ENCODING_TYPE_RAW
-      };
-      const rendererInfo: audio.AudioRendererInfo = {
-        usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
-        rendererFlags: 0
-      };
-      const rendererOptions: audio.AudioRendererOptions = {
-        streamInfo: streamInfo,
-        rendererInfo: rendererInfo
-      };
-      const renderer: audio.AudioRenderer = await audio.createAudioRenderer(rendererOptions);
-      await renderer.start();
-      console.info('======== TTS AudioRenderer started (STREAM_USAGE_MUSIC)');
-      return renderer;
-    } catch (e) {
-      console.error('======== TTS AudioRenderer init failed: ' + JSON.stringify(e));
-      return null;
-    }
-  }
-
-  // 销毁 AudioRenderer
-  private destroyTtsRenderer(): void {
-    if (!this.ttsRenderer) return;
-    try {
-      this.ttsRenderer.stop();
-      this.ttsRenderer.release();
-    } catch (e) {
-      console.error('======== TTS AudioRenderer stop/release failed: ' + JSON.stringify(e));
-    }
-    this.ttsRenderer = null;
-  }
-
-  // 写入 PCM 块到 AudioRenderer（避免箭头函数字面量触犯 arkts-no-structural-typing）
-  private ttsWriteChunk(buf: ArrayBuffer): Promise<void> {
-    return new Promise<void>((resolve: Function, reject: Function) => {
-      try {
-        this.ttsRenderer!.write(buf, (err: BusinessError | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      } catch (e) { reject(e); }
-    });
-  }
-
-  // 等待指定毫秒（避免箭头函数字面量）
-  private sleep(ms: number): Promise<void> {
-    return new Promise<void>((resolve: Function) => {
-      setTimeout(() => { resolve(); }, ms);
-    });
-  }
-
   // TTS 停止（JS Bridge 调用，打断式）
   private ttsStop(): void {
     if (!this.ttsEngine) return;
-    // 打断时立即销毁 AudioRenderer 停止播放
     this.destroyTtsRenderer();
     this.ttsPcmBuffers = [];
     try {
@@ -415,56 +356,6 @@ struct Index {
     setTimeout(() => {
       try { this.ttsEngine?.stop(); } catch (_e) {}
     }, 80);
-  }
-
-  // 播放累积的 PCM 数据（通过 AudioRenderer，跟随系统媒体音量）
-  private async playTtsPcm(): Promise<void> {
-    if (this.ttsPcmBuffers.length === 0) return;
-    try {
-      // 合并所有 PCM 片段为一个连续缓冲区
-      let totalLen = 0;
-      for (const buf of this.ttsPcmBuffers) totalLen += buf.byteLength;
-      const merged = new Int16Array(totalLen / 2);
-      let offset = 0;
-      for (const buf of this.ttsPcmBuffers) {
-        const view = new Int16Array(buf);
-        for (let i = 0; i < view.length; i++) merged[offset++] = view[i];
-      }
-      this.ttsPcmBuffers = [];
-
-      // 创建/重用 AudioRenderer
-      this.destroyTtsRenderer();
-      this.ttsRenderer = await this.initTtsRenderer();
-      if (!this.ttsRenderer) {
-        console.error('======== playTtsPcm: failed to create AudioRenderer');
-        return;
-      }
-
-      const totalBuf: ArrayBuffer = merged.buffer;
-      let written = 0;
-
-      // 分块写入（每次 4096 字节）
-      const chunkSize = 4096;
-      while (written < totalBuf.byteLength) {
-        const end = Math.min(written + chunkSize, totalBuf.byteLength);
-        const chunk = totalBuf.slice(written, end);
-        await this.ttsWriteChunk(chunk);
-        written = end;
-        // 给系统一点缓冲时间
-        if (written < totalBuf.byteLength) {
-          await this.sleep(10);
-        }
-      }
-
-      console.info('======== playTtsPcm done, total=' + totalBuf.byteLength + ' bytes');
-      // 播放完成后通知 JS 端（防止气泡提前消失）
-      this.sendToWebView('onTtsComplete', '');
-    } catch (e) {
-      console.error('======== playTtsPcm failed: ' + JSON.stringify(e));
-      this.destroyTtsRenderer();
-      // 播放失败也要通知 JS 端收尾
-      this.sendToWebView('onTtsComplete', '');
-    }
   }
 
   // ============================================================
@@ -627,6 +518,108 @@ struct Index {
     } catch (e) {
       console.error('======== sendToWebView error: ' + JSON.stringify(e));
     }
+  }
+
+  // ============================================================
+  //  TTS AudioRenderer — 自行播放 PCM，跟随系统媒体音量
+  // ============================================================
+
+  private playTtsPcm(): void {
+    if (this.ttsPcmBuffers.length === 0) {
+      this.sendToWebView('onTtsComplete', '');
+      return;
+    }
+    try {
+      let totalLen: number = 0;
+      for (let i: number = 0; i < this.ttsPcmBuffers.length; i++) {
+        totalLen += this.ttsPcmBuffers[i].byteLength;
+      }
+      const merged: Int16Array = new Int16Array(totalLen / 2);
+      let offset: number = 0;
+      for (let i: number = 0; i < this.ttsPcmBuffers.length; i++) {
+        const view: Int16Array = new Int16Array(this.ttsPcmBuffers[i]);
+        for (let j: number = 0; j < view.length; j++) {
+          merged[offset++] = view[j];
+        }
+      }
+      this.ttsPcmBuffers = [];
+
+      this.destroyTtsRenderer();
+      this.playMergedPcm(merged.buffer as ArrayBuffer);
+    } catch (e) {
+      console.error('======== playTtsPcm failed: ' + JSON.stringify(e));
+      this.sendToWebView('onTtsComplete', '');
+    }
+  }
+
+  private playMergedPcm(totalBuf: ArrayBuffer): void {
+    const streamInfo: audio.AudioStreamInfo = {
+      samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_16000,
+      channels: audio.AudioChannel.CHANNEL_1,
+      sampleFormat: audio.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
+      encodingType: audio.AudioEncodingType.ENCODING_TYPE_RAW
+    };
+    const rendererInfo: audio.AudioRendererInfo = {
+      usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
+      rendererFlags: 0
+    };
+    const rendererOptions: audio.AudioRendererOptions = {
+      streamInfo: streamInfo,
+      rendererInfo: rendererInfo
+    };
+    audio.createAudioRenderer(rendererOptions).then(
+      (renderer: audio.AudioRenderer): void => {
+        this.ttsRenderer = renderer;
+        renderer.start();
+        this.writeAllChunks(0, totalBuf);
+      },
+      (err: BusinessError): void => {
+        console.error('======== TTS AudioRenderer create failed: ' + JSON.stringify(err));
+        this.sendToWebView('onTtsComplete', '');
+      }
+    );
+  }
+
+  private writeAllChunks(written: number, totalBuf: ArrayBuffer): void {
+    try {
+      const chunkSize: number = 4096;
+      const end: number = Math.min(written + chunkSize, totalBuf.byteLength);
+      const chunk: ArrayBuffer = totalBuf.slice(written, end);
+      this.ttsRenderer!.write(chunk, (err: BusinessError | null): void => {
+        if (err) {
+          console.error('======== TTS write error: ' + JSON.stringify(err));
+          this.sendToWebView('onTtsComplete', '');
+          return;
+        }
+        const nextWritten: number = end;
+        if (nextWritten >= totalBuf.byteLength) {
+          console.info('======== playTtsPcm done, total=' + totalBuf.byteLength + ' bytes');
+          this.sendToWebView('onTtsComplete', '');
+        } else {
+          setTimeout((): void => {
+            this.writeAllChunks(nextWritten, totalBuf);
+          }, 10);
+        }
+      });
+    } catch (e) {
+      console.error('======== TTS writeAllChunks error: ' + JSON.stringify(e));
+      this.sendToWebView('onTtsComplete', '');
+    }
+  }
+
+  private initTtsRenderer(): void {
+    // 空 — 在 playTtsPcm 中直接创建并播放
+  }
+
+  private destroyTtsRenderer(): void {
+    if (!this.ttsRenderer) return;
+    try {
+      this.ttsRenderer.stop();
+      this.ttsRenderer.release();
+    } catch (e) {
+      console.error('======== TTS AudioRenderer stop/release failed: ' + JSON.stringify(e));
+    }
+    this.ttsRenderer = null;
   }
 
   // ============================================================
