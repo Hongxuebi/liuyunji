@@ -345,17 +345,19 @@ struct Index {
   // 创建 AudioRenderer（PCM 16kHz 单声道 S16LE，跟随系统媒体音量）
   private async initTtsRenderer(): Promise<audio.AudioRenderer | null> {
     try {
+      const streamInfo: audio.AudioStreamInfo = {
+        samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_16000,
+        channels: audio.AudioChannel.CHANNEL_1,
+        sampleFormat: audio.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
+        encodingType: audio.AudioEncodingType.ENCODING_TYPE_RAW
+      };
+      const rendererInfo: audio.AudioRendererInfo = {
+        usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
+        rendererFlags: 0
+      };
       const rendererOptions: audio.AudioRendererOptions = {
-        streamInfo: {
-          samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_16000,
-          channels: audio.AudioChannel.CHANNEL_1,
-          sampleFormat: audio.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
-          encodingType: audio.AudioEncodingType.ENCODING_TYPE_RAW
-        },
-        rendererInfo: {
-          usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
-          rendererFlags: 0
-        }
+        streamInfo: streamInfo,
+        rendererInfo: rendererInfo
       };
       const renderer: audio.AudioRenderer = await audio.createAudioRenderer(rendererOptions);
       await renderer.start();
