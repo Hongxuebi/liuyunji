@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "流云记"
+    },
+    {
+      "name": "microphone_permission_reason",
+      "value": "用于语音通话时录制声音并识别为文字"
     }
   ]
 }

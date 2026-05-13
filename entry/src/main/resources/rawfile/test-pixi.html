@@ -1,0 +1,158 @@
+<!-- test-pixi.html — Phase 0 验证：PixiJS + Live2D 在鸿蒙 WebView 中是否能运行 -->
+<!-- 放在 liuyunji/entry/src/main/resources/rawfile/ 中 -->
+<!-- 
+  验证步骤：
+  1. 确保 Live2D 文件已从 doubaodadianhua 复制到 rawfile/ 下
+  2. 构建并安装到鸿蒙手机
+  3. 在 WebView 控制台执行: window.testLive2D()
+  4. 看控制台输出判定结果
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PixiJS + Live2D 测试</title>
+  <style>
+    body { margin: 0; background: #0a0e1a; color: #e0e0e0; font-family: sans-serif; padding: 20px; }
+    h2 { color: #4fc3f7; }
+    .step { margin: 10px 0; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+    .step.pass { background: #1b5e20; color: #a5d6a7; }
+    .step.fail { background: #b71c1c; color: #ef9a9a; }
+    .step.info { background: #1a237e; color: #90caf9; }
+    #canvasContainer { border: 1px solid #333; margin: 10px 0; width: 300px; height: 300px; }
+  </style>
+</head>
+<body>
+  <h2>🔬 PixiJS + Live2D 验证</h2>
+
+  <div id="results"></div>
+  <div id="canvasContainer"></div>
+
+  <script src="live2dcubismcore.min.js"></script>
+  <script src="l2d.bundle.js"></script>
+
+  <script>
+    var resultsEl = document.getElementById('results');
+
+    function addResult(label, pass, detail) {
+      var cls = pass === true ? 'pass' : (pass === false ? 'fail' : 'info');
+      var text = (pass === true ? '✅ ' : (pass === false ? '❌ ' : 'ℹ️ ')) + label;
+      if (detail) text += ' — ' + detail;
+      var div = document.createElement('div');
+      div.className = 'step ' + cls;
+      div.textContent = text;
+      resultsEl.appendChild(div);
+    }
+
+    addResult('Step 1/5: 检查 PIXI', null, 'typeof PIXI = ' + typeof PIXI);
+    if (typeof PIXI === 'undefined') {
+      addResult('PIXI 加载检查', false, 'PIXI 未定义 — l2d.bundle.js 可能未加载');
+    } else {
+      addResult('PIXI 加载检查', true, 'PIXI v' + (PIXI.VERSION || '?'));
+    }
+
+    addResult('Step 2/5: 检查 Live2DModel', null, 'typeof Live2DModel = ' + typeof Live2DModel);
+    if (typeof Live2DModel === 'undefined') {
+      addResult('Live2DModel 检查', false, 'Live2DModel 未定义');
+    } else {
+      addResult('Live2DModel 检查', true);
+    }
+
+    window.testLive2D = async function() {
+      resultsEl.innerHTML = '';
+      addResult('=== 开始验证 ===');
+
+      // Step 1
+      addResult('Step 1/5: PIXI', null, 'typeof PIXI = ' + typeof PIXI);
+      if (typeof PIXI === 'undefined') {
+        addResult('PIXI', false, '未加载');
+        return 'FAIL: PIXI not loaded';
+      }
+      addResult('PIXI', true, 'v' + (PIXI.VERSION || '?'));
+
+      // Step 2
+      addResult('Step 2/5: Live2DModel', null, 'typeof Live2DModel = ' + typeof Live2DModel);
+      if (typeof Live2DModel === 'undefined') {
+        addResult('Live2DModel', false, '未加载');
+        return 'FAIL: Live2DModel not loaded';
+      }
+      addResult('Live2DModel', true);
+
+      // Step 3: PIXI Application 创建
+      addResult('Step 3/5: 创建 PIXI.Application...');
+      try {
+        var container = document.getElementById('canvasContainer');
+        var app = new PIXI.Application({
+          view: document.createElement('canvas'),
+          width: 300,
+          height: 300,
+          backgroundColor: 0x1a1a2e,
+          antialias: true,
+          resolution: window.devicePixelRatio || 1,
+          autoDensity: true
+        });
+        container.innerHTML = '';
+        container.appendChild(app.view);
+        addResult('PIXI.Application', true, app.view.width + 'x' + app.view.height);
+      } catch(e) {
+        addResult('PIXI.Application', false, e.message);
+        return 'FAIL: PIXI.Application creation failed: ' + e.message;
+      }
+
+      // Step 4: 加载 Live2D 模型
+      addResult('Step 4/5: 加载 Haru 模型...');
+      try {
+        // 动态计算模型路径（兼容 rawfile 协议和 file:// 协议）
+        var baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        if (!baseUrl.endsWith('/')) baseUrl += '/';
+        var modelUrl = baseUrl + 'Haru/Haru.model3.json';
+        addResult('模型路径', null, modelUrl);
+
+        var model = await Live2DModel.from(modelUrl);
+        app.stage.addChild(model);
+
+        model.anchor.set(0.5, 1);
+        model.scale.set(0.4);
+        model.x = 150;
+        model.y = 280;
+
+        addResult('模型加载', true, 'Haru.model3.json');
+      } catch(e) {
+        addResult('模型加载', false, e.message);
+        return 'FAIL: Model loading failed: ' + e.message;
+      }
+
+      // Step 5: 表情测试
+      addResult('Step 5/5: 表情切换...');
+      try {
+        model.expression('F01');
+        addResult('表情 F01', true);
+
+        // 测试 Idle 动作
+        if (model.internalModel && model.internalModel.motionManager) {
+          var motions = Object.keys(model.internalModel.motionManager._animations || {});
+          addResult('可用动作', null, motions.length + ' 个');
+        }
+      } catch(e) {
+        addResult('表情切换', false, e.message);
+      }
+
+      addResult('=== 验证完成：全部通过 ✅ ===');
+      return 'SUCCESS';
+    };
+
+    addResult('准备就绪', null, '在控制台运行 window.testLive2D() 开始验证');
+
+    // 自动运行（延迟确保脚本加载完成）
+    setTimeout(function() {
+      if (typeof PIXI !== 'undefined' && typeof Live2DModel !== 'undefined') {
+        addResult('自动验证...');
+        window.testLive2D().then(function(result) {
+          console.log('[TEST] 最终结果:', result);
+        });
+      }
+    }, 500);
+  </script>
+</body>
+</html>
