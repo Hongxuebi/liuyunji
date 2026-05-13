@@ -498,13 +498,7 @@ struct Index {
   private sendToWebView(msg: string, data: string): void {
     try {
       const safeData: string = _safeEscapeJson(data);
-      const js: string =
-        `(function(){` +
-        `  var b=window.__nativeBridge__||window.nativeBridge;` +
-        `  var handler=b&&typeof b._onNativeEvent==='function'?b._onNativeEvent:` +
-        `    typeof window._nativeEventHandler==='function'?window._nativeEventHandler:null;` +
-        `  if(handler)handler('${msg}','${safeData}');` +
-        `})()`;
+      const js: string = `window.handleNativeEvent('${msg}','${safeData}')`;
       this.controller.runJavaScript(js);
     } catch (e) {
       console.error('======== sendToWebView error: ' + JSON.stringify(e));
