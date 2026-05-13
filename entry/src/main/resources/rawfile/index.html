@@ -782,7 +782,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
   </div>
 
     <!-- ===== 语音通话浮层（豆包原版完整搬入） ===== -->
-<div id="语音通话浮层">
+<div id="语音通话浮层" style="display:none">
   <div class="call-bg"></div>
 
   <div class="loading-overlay" id="loadingOverlay">
@@ -892,6 +892,13 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
   </div>
 
 </div>
+
+<!-- 豆宝遗留DOM占位（流云记不需要但JS引用不崩溃） -->
+<div id="charSelect" class="hidden" style="display:none;"></div>
+<div id="charGrid" style="display:none;"></div>
+<div id="inputPanel" style="display:none;"><input id="keyboardInput" type="text"/><button id="inputCancelBtn">取消</button><button id="inputSendBtn">发送</button></div>
+<div id="renamePanel" style="display:none;"><span id="renamePanelTitle"></span><input id="renameInput" type="text"/><input id="renamePitch" type="range"/><span id="renamePitchVal"></span><input id="renameSpeed" type="range"/><span id="renameSpeedVal"></span></div>
+
 
   <div class="chat-history-panel" id="chatPanel">
     <div class="chat-panel-header"><span class="chat-panel-title">对话记录</span><div><span class="chat-panel-clear" id="clearChatBtn">清空</span><span class="chat-panel-hide" id="hideChatBtn">隐藏</span></div></div>
@@ -1101,19 +1108,9 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
     if (语按钮) {
       语按钮.title = '语音通话';
       语按钮.addEventListener('click', function() {
-        // 检查当前智能体是否有关联 Live2D 角色
+        // 检查当前智能体是否有关联 Live2D 角色，未绑定则默认 Haru
         var 当前智能体 = window.获取当前智能体配置 ? window.获取当前智能体配置() : null;
-        var 角色ID = 当前智能体 && 当前智能体.live2dModelId ? 当前智能体.live2dModelId : null;
-        
-        if (!角色ID) {
-          // 未绑定角色，提示用户
-          if (window.显示提示) {
-            window.显示提示('请先为当前智能体选择 Live2D 角色（编辑智能体 → Live2D角色）');
-          } else {
-            alert('请先为当前智能体选择 Live2D 角色');
-          }
-          return;
-        }
+        var 角色ID = 当前智能体 && 当前智能体.live2dModelId ? 当前智能体.live2dModelId : 'haru';
         
         // 进入通话模式
         if (window.进入通话模式) {
@@ -1130,6 +1127,9 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
 
   <!-- ===== 语音通话模式脚本（融合 Phase 1） ===== -->
   <script>
+window.__EMBEDDED_CHARACTERS__ = [{"id":"haru","name":"Haru","displayName":"Haru","title":"活泼小助理","modelPath":"./Haru/Haru.model3.json","defaultExpression":"F01","defaultMotion":"Idle","blinkParam":"ParamEyeLOpen","systemPrompt":"你是一个名叫 Haru 的活泼可爱的女生，正在和用户进行语音通话。你的性格温柔友善，偶尔调皮。请用口语化、简短的句子回复（30字以内），像真人打电话一样自然。不要用表情符号，不要说网络用语，不要说自己是AI。保持对话流畅自然。","greeting":"你好呀！我是 Haru，很高兴见到你~","ttsVoiceId":"p13","accentColor":"#3b82f6","description":"阳光元气的女生","tags":["温柔","元气"],"mouthExpressions":{"closed":"F00","half":"F01","open":"F02"},"mouthParams":["ParamMouthOpenY"]},{"id":"mark","name":"Mark","displayName":"Mark","title":"阳光少年","modelPath":"./Mark/Mark.model3.json","defaultExpression":"F01","defaultMotion":"Idle","blinkParam":"ParamEyeLOpen","systemPrompt":"你是一个名叫 Mark 的阳光开朗的少年，正在和用户进行语音通话。你精力充沛、乐于助人，说话直率又真诚。请用口语化、简短的句子回复（30字以内），像和朋友聊天一样自然。不要用表情符号，不要说网络用语，不要说自己是AI。保持对话流畅自然。","greeting":"嘿！我是 Mark，来吧，想聊什么都可以！","ttsVoiceId":"p13","accentColor":"#22c55e","description":"活力满满的阳光少年","tags":["阳光","开朗"],"mouthExpressions":{"closed":"F01","half":"F01","open":"F02"},"mouthParams":["ParamMouthOpenY"]}];
+</script>
+<script>
 
 // ================================================================
 //  豆宝 · 多角色 Live2D 语音通话
@@ -1711,7 +1711,8 @@ function selectCharacter(id) {
   }
 
   // 隐藏角色选择页，显示通话页
-  $('charSelect').classList.add('hidden');
+  // 流云记适配：无角色选择页
+  // $('charSelect').classList.add('hidden');
 
   // 更新UI主题
   document.documentElement.style.setProperty('--accent-color', char.accentColor);
@@ -1731,24 +1732,16 @@ function selectCharacter(id) {
   if (window._rebuildActionPanelForUI) window._rebuildActionPanelForUI();
 }
 
-function if(window.挂断通话)window.挂断通话() {
+function _returnToVerification() {
+  // 返回验证浮层（替代原来的角色选择页）
   if (connected) {
-    connected = false;
-    stopTimer();
+    connected = false; stopTimer();
     if (isRecording) { stopNativeAsr(); stopRecordingUI(); }
-    nativeTtsStop();
-    if (mouthInterval) clearInterval(mouthInterval);
-    closeMouth();
-    setMouth(0);
-    setTimeout(() => {
-      removeModel();  // 只移除模型，保留 PIXI Application
-      chatHistory = [];
-      $('chatList').innerHTML = '';
-      $('charSelect').classList.remove('hidden');
-    }, 300);
-    return;
+    nativeTtsStop(); closeMouth(); setMouth(0);
+    $('micWaveBars').classList.remove('active');
   }
-  $('charSelect').classList.remove('hidden');
+  document.getElementById('语音通话浮层').style.display = 'none';
+  document.getElementById('通话验证浮层').style.display = 'flex';
 }
 
 function removeModel() {
@@ -2481,7 +2474,9 @@ function aiSpeak(text) {
 
 
 // ================================================================
-//  AI 对话 — 流云记适配（window.发送消息 优先，DeepSeek 兜底）
+//  AI 对话 — 流云记适配
+//  通过 window.发送消息 桥接，复用流云记的API和提示词体系
+//  发送消息内部已处理TTS分流（播报通话TTS + 添加通话对话）
 // ================================================================
 async function callDeepSeek(userMsg) {
   chatHistory.push({ role: 'user', content: userMsg });
@@ -2493,28 +2488,48 @@ async function callDeepSeek(userMsg) {
   }
 
   try {
-    // 流云记适配：优先使用 window.发送消息
+    // 流云记适配：使用 window.发送消息（已内置TTS分流）
     if (typeof window.发送消息 === 'function') {
-      return new Promise((resolve, reject) => {
-        window.发送消息(userMsg, function(reply) {
-          if (reply) {
-            chatHistory.push({ role: 'assistant', content: reply });
-            resolve(reply);
-          } else {
-            reject(new Error('AI 回复为空'));
+      // 发送消息是异步的，会自动调用 window.播报通话TTS 和 window.添加通话对话
+      // 我们需要等待它完成，然后从对话历史中获取AI回复
+      window.发送消息(userMsg);
+      
+      // 等待AI回复：轮询对话历史变化
+      const prevLen = chatHistory.length;
+      const maxWait = 30000; // 最多等30秒
+      const startWait = Date.now();
+      
+      return new Promise((resolve) => {
+        const check = setInterval(() => {
+          // 检查是否收到了AI回复（通过 window.添加通话对话 的调用来判断）
+          if (Date.now() - startWait > maxWait) {
+            clearInterval(check);
+            $('roleStatus').textContent = 'AI回复超时';
+            $('roleStatus').className = 'role-status';
+            resolve('抱歉，我刚才走神了，能再说一次吗？');
+            return;
           }
-        });
+          // 发送消息内部会在完成后调用播报通话TTS/添加通话对话
+          // 所以我们不需要手动获取回复——TTS会自动播放
+        }, 200);
+        
+        // 简化：直接返回，TTS由发送消息内部处理
+        clearInterval(check);
+        $('roleStatus').textContent = '通话中';
+        $('roleStatus').className = 'role-status';
+        resolve(''); // 回复由TTS分流处理，不需要返回值
       });
     }
+    
     // 兜底：DeepSeek API 直连
     const apiKey = localStorage.getItem('deepseek_api_key') || '';
     if (!apiKey) {
-      $('roleStatus').textContent = '⚙ 请设置 API Key';
+      $('roleStatus').textContent = '⚙ 未连接AI服务';
       $('roleStatus').className = 'role-status';
-      return '_NO_KEY_';
+      return '';
     }
     const currentChar = getCharacter(currentCharacterId);
-    const systemPromptText = currentChar ? getPatchedSystemPrompt(currentChar) : '你是一个名叫 Haru 的活泼可爱的女生...';
+    const systemPromptText = currentChar ? getPatchedSystemPrompt(currentChar) : '你是一个活泼可爱的AI伙伴，正在和用户语音通话。请用简短自然的口语回复（30字以内）。';
     const systemPrompt = { role: 'system', content: systemPromptText };
     const messages = [systemPrompt, ...chatHistory.slice(-16)];
     const resp = await fetch('https://api.deepseek.com/chat/completions', {
@@ -2526,6 +2541,8 @@ async function callDeepSeek(userMsg) {
     const data = await resp.json();
     const reply = data.choices[0].message.content.trim();
     chatHistory.push({ role: 'assistant', content: reply });
+    addChat('ai', reply);
+    aiSpeak(reply);
     return reply;
   } catch (err) {
     console.error('AI 对话 error:', err);
@@ -2545,16 +2562,18 @@ async function userListen(userText) {
   $('interimCaption').style.display = 'none';
   const reply = await callDeepSeek(userText);
   if (reply === '_NO_KEY_') {
-    // 无 API Key：不播 TTS，直接在对话中显示提示
-    $('roleStatus').textContent = '⚙ 请点击设置按钮输入 API Key';
+    $('roleStatus').textContent = '⚙ 未连接AI服务';
     $('roleStatus').className = 'role-status';
-    addChat('ai', '👋 你好！请先点击右上角 ⚙ 设置 API Key，我就能和你聊天啦～');
-    // ★ 自动对话：无 Key 也走 finishTtsUI，避免循环卡住
+    addChat('ai', '请先配置AI服务才能通话哦~');
     _ttsActive = false;
     finishTtsUI();
     return;
   }
-  aiSpeak(reply);
+  // 回复不为空时才手动播TTS（DeepSeek直连兜底路径）
+  // 流云记API路径：发送消息内部已处理TTS分流，reply为空
+  if (reply && reply.trim()) {
+    aiSpeak(reply);
+  }
 }
 
 function startConv() {
@@ -2581,7 +2600,7 @@ function addChat(role, text) {
 
 function resize() {
   if (!app || !model) return;
-  if ($('inputPanel')._kbActive) return;
+  if ($('inputPanel') && $('inputPanel')._kbActive) return;
   const w = container.clientWidth, h = container.clientHeight;
   if (w <= 0 || h <= 0) return;
   app.renderer.resize(w, h);
@@ -2912,7 +2931,7 @@ $('toggleChatBtn').addEventListener('click', () => {
 $('clearChatBtn').addEventListener('click', () => { $('chatList').innerHTML = ''; addChat('ai', '对话记录已清空'); });
 $('hideChatBtn').addEventListener('click', () => { $('chatPanel').classList.remove('open'); });
 $('settingsBtn').addEventListener('click', function(e){ if(_S.a){ e.stopPropagation(); _toggleAM(); return; } if(_S.p) return; promptApiKey(); });
-$('charSwitchBtn').addEventListener('click', showCharSelect);
+$('charSwitchBtn').addEventListener('click', _returnToVerification);
 
 $('keyboardBtn').addEventListener('click', () => {
   if (_S.p) return;
@@ -2936,18 +2955,18 @@ $('keyboardInput').addEventListener('keydown', e => {
 
 function showInputPanel() {
   $('keyboardInput').value = '';
-  $('inputPanel').style.display = 'flex';
-  $('inputPanel')._kbActive = true;
-  $('inputPanel')._kbOrigHeight = container.style.height || '';
+  if ($('inputPanel')) $('inputPanel').style.display = 'flex';
+  if ($('inputPanel')) $('inputPanel')._kbActive = true;
+  if ($('inputPanel')) $('inputPanel')._kbOrigHeight = container.style.height || '';
   // 锁定 container 高度不随键盘变化
   container.style.height = container.clientHeight + 'px';
   setTimeout(() => $('keyboardInput').focus(), 100);
 }
 function hideInputPanel() {
-  $('inputPanel')._kbActive = false;
-  $('inputPanel').style.display = 'none';
+  if ($('inputPanel')) $('inputPanel')._kbActive = false;
+  if ($('inputPanel')) $('inputPanel').style.display = 'none';
   // 恢复容器高度
-  container.style.height = $('inputPanel')._kbOrigHeight || '';
+  container.style.height = ($('inputPanel') && $('inputPanel')._kbOrigHeight) || '';
   // 立即同步恢复视图（键盘已收起，container高度已恢复）
   resize();
 }
@@ -3698,13 +3717,18 @@ var _rattanMotions = [
 //  流云记验证浮层接口适配
 // ================================================================
 window.进入通话模式 = function(charId) {
-  if (charId) {
-    selectCharacter(charId);
-  } else if (!currentCharacterId) {
-    selectCharacter('haru');
-  }
+  // 先显示通话浮层（loadModel 需要容器可见才能获取正确尺寸）
   document.getElementById('通话验证浮层').style.display = 'none';
   document.getElementById('语音通话浮层').style.display = 'flex';
+  
+  // 延迟一帧让浏览器完成布局，再加载模型
+  requestAnimationFrame(function() {
+    if (charId) {
+      selectCharacter(charId);
+    } else if (!currentCharacterId) {
+      selectCharacter('haru');
+    }
+  });
 };
 
 window.挂断通话 = function() {
@@ -3731,11 +3755,17 @@ window.挂断通话 = function() {
 };
 
 window.添加通话对话 = function(role, text) {
-  addChat(role, text);
+  // 仅在通话模式激活时添加到通话记录
+  if (document.getElementById('语音通话浮层').style.display !== 'none') {
+    addChat(role, text);
+  }
 };
 
 window.播报通话TTS = function(text) {
-  aiSpeak(text);
+  // 仅在通话模式激活时播报TTS
+  if (document.getElementById('语音通话浮层').style.display !== 'none') {
+    aiSpeak(text);
+  }
 };
 </script>
 </body>
