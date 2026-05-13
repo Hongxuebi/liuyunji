@@ -957,6 +957,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
           console.warn('[调试服务器] 启动命令: node debug-server.js');
         });
       }, 1000);
+    window.__loadingModel = false;
     });
   </script>
 
@@ -1977,6 +1978,8 @@ function stopRecordingUI() {
 // ================================================================
 
 async function loadModel() {
+  if (window.__loadingModel) { return void console.log("[DIAG] loadModel: skipped, already loading"); }
+  window.__loadingModel = true;
   diag('loadModel() called, charId=' + currentCharacterId);
   try {
     const char = getCharacter(currentCharacterId);
@@ -2111,9 +2114,11 @@ async function loadModel() {
           'canvas=' + canvas.width + 'x' + canvas.height + '[' + canvas.offsetWidth + 'x' + canvas.offsetHeight + ']');
       }
     }, 1000);
+    window.__loadingModel = false;
 
   } catch(err) {
-    console.error('❌ 加载失败:', err, err.stack);
+    console.error('❌ 加载失败:', err, err.stack)
+    window.__loadingModel = false;
     diag('LOAD_ERROR: ' + (err.message || err) + ' | ' + (err.stack || '').substring(0,300));
     // 恢复界面，防止卡在加载状态
     $('loadingOverlay').classList.add('hide');
