@@ -83,3 +83,8 @@ this.isStopping = false;
 - 使用鸿蒙原生 TTS-ASR 桥接（非桌面 SpeechSynthesis 降级）
 - 语按钮通过 `sendToWebView` 通信（桌面直接 click 事件）
 - ASR 引擎生命周期管理（isListening/isStopping/isCapturing）须与 doubaodadianhua 保持同步
+
+## v0.9.27 — 2026-05-14
+### 智能体编辑面板 TTS 语音参数（同步 love-helper v7.2.9）
+- 智能体编辑面板.js + 智能体编辑面板-样式.css: 同步 TTS 音调/语速滑块
+- index.html: aiSpeak 优先从智能体配置读 ttsPitch/ttsSpeed
