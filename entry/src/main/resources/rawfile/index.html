@@ -2933,7 +2933,7 @@ $('hangupBtn').addEventListener('click', () => {
   setMouth(0);
   addChat('ai', '通话已结束，下次再聊~');
   // 3秒后显示角色选择
-  setTimeout(showCharSelect, 2000);
+  setTimeout(_returnToVerification, 2000);
 });
 
 $('toggleChatBtn').addEventListener('click', () => {
@@ -2943,7 +2943,13 @@ $('toggleChatBtn').addEventListener('click', () => {
 
 $('clearChatBtn').addEventListener('click', () => { $('chatList').innerHTML = ''; addChat('ai', '对话记录已清空'); });
 $('hideChatBtn').addEventListener('click', () => { $('chatPanel').classList.remove('open'); });
-$('settingsBtn').addEventListener('click', function(e){ if(_S.a){ e.stopPropagation(); _toggleAM(); return; } if(_S.p) return; promptApiKey(); });
+// 流云记适配：设置按钮打开设置浮层
+function openSettingsOverlay() {
+  var 浮层 = document.getElementById('设置浮层');
+  if (浮层) { 浮层.style.display = 'flex'; return; }
+  console.log('[settingsBtn] 设置浮层DOM不存在');
+}
+$('settingsBtn').addEventListener('click', function(e){ if(_S.a){ e.stopPropagation(); _toggleAM(); return; } if(_S.p) return; if(typeof openSettingsOverlay === 'function') openSettingsOverlay(); else console.log('[settingsBtn] 设置面板未实现'); });
 $('charSwitchBtn').addEventListener('click', _returnToVerification);
 
 $('keyboardBtn').addEventListener('click', () => {

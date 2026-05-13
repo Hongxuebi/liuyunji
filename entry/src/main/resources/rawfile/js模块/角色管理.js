@@ -21,7 +21,16 @@
       modelPath: 'Haru/Haru.model3.json',
       expressions: ['F01','F02','F03','F04','F05','F06','F07','F08'],
       defaultExpression: 'F01',
-      // 动作映射将在 LIVE2D核心.js 中处理
+      accentColor: '#3b82f6',
+    },
+    'hiyori': {
+      id: 'hiyori',
+      name: 'Hiyori',
+      displayName: 'Hiyori',
+      modelPath: 'Hiyori/Hiyori.model3.json',
+      expressions: ['F01','F02','F03','F04','F05','F06','F07','F08'],
+      defaultExpression: 'F01',
+      accentColor: '#8b5cf6',
     },
     'mark': {
       id: 'mark',
@@ -30,6 +39,43 @@
       modelPath: 'Mark/Mark.model3.json',
       expressions: ['F01','F02','F03','F04','F05','F06','F07','F08'],
       defaultExpression: 'F01',
+      accentColor: '#22c55e',
+    },
+    'natori': {
+      id: 'natori',
+      name: 'Natori',
+      displayName: 'Natori',
+      modelPath: 'Natori/Natori.model3.json',
+      expressions: ['F01','F02','F03','F04','F05','F06','F07','F08'],
+      defaultExpression: 'Normal',
+      accentColor: '#ec4899',
+    },
+    'mao': {
+      id: 'mao',
+      name: 'Mao',
+      displayName: 'Mao',
+      modelPath: 'Mao/Mao.model3.json',
+      expressions: ['exp_01','exp_02','exp_03','exp_04','exp_05'],
+      defaultExpression: 'exp_01',
+      accentColor: '#f472b6',
+    },
+    'gothic': {
+      id: 'gothic',
+      name: '哥特少女',
+      displayName: '哥特少女',
+      modelPath: 'characters/ゴシック少女/model03/model03.model3.json',
+      expressions: [],
+      defaultExpression: '',
+      accentColor: '#d946ef',
+    },
+    'rattan': {
+      id: 'rattan',
+      name: '白藤',
+      displayName: '白藤',
+      modelPath: 'Rattan/Rattan.model3.json',
+      expressions: [],
+      defaultExpression: '',
+      accentColor: '#c084fc',
     }
   };
 
