@@ -2948,6 +2948,7 @@ _D.kb.addEventListener('click', function(e){ if(_S.p){ e.stopPropagation(); _S.i
 _D.sb2.addEventListener('click', function(e){ if(_S.p){ e.stopPropagation(); _S.iA=true; _onPE({preventDefault:function(){}}); } });
 _D.hb.addEventListener('click', function(e){ if(_S.p||_S.l){ e.stopImmediatePropagation(); if(_S.l) _finishLk(); else { _S.iL=true; _onPE({preventDefault:function(){}}); } } });
 _D.hb.addEventListener('touchend', function(e){ if(_S.p||_S.l){ e.preventDefault(); e.stopPropagation(); if(_S.l) _finishLk(); else { _S.iL=true; _onPE({preventDefault:function(){}}); } } });
+_D.hb.addEventListener('mousedown', function(e){ if(_S.p||_S.l){ e.preventDefault(); e.stopPropagation(); if(_S.l) _finishLk(); else { _S.iL=true; _onPE({preventDefault:function(){}}); } } });
 _D.sb2.addEventListener('click', function(e){ if(_S.a && !_S.p){ e.stopPropagation(); _toggleAM(); } });
 _D.sb2.addEventListener('touchend', function(e){ if(_S.a && !_S.p){ e.preventDefault(); e.stopPropagation(); _toggleAM(); } });
 
