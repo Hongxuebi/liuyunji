@@ -1773,7 +1773,7 @@ function _returnToVerification() {
     $('micWaveBars').classList.remove('active');
   }
   document.getElementById('语音通话浮层').style.display = 'none';
-  document.getElementById('通话验证浮层').style.display = 'flex';
+  // 流云记无验证浮层 DOM，直接隐藏通话浮层
 }
 
 function removeModel() {
@@ -3756,7 +3756,7 @@ var _rattanMotions = [
 // ================================================================
 window.进入通话模式 = function(charId) {
   // 先显示通话浮层（loadModel 需要容器可见才能获取正确尺寸）
-  document.getElementById('通话验证浮层').style.display = 'none';
+  // 流云记无验证浮层 DOM
   document.getElementById('语音通话浮层').style.display = 'flex';
   
   // 延迟一帧让浏览器完成布局，再加载模型
@@ -3789,7 +3789,7 @@ window.挂断通话 = function() {
     setMouth && setMouth(0);
   }
   document.getElementById('语音通话浮层').style.display = 'none';
-  document.getElementById('通话验证浮层').style.display = 'flex';
+  // 流云记无验证浮层 DOM
 };
 
 window.添加通话对话 = function(role, text) {
