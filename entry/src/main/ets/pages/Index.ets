@@ -183,10 +183,6 @@ struct Index {
   // ====== TTS 引擎 ======
   private ttsEngine: textToSpeech.TextToSpeechEngine | null = null;
   private ttsReady: boolean = false;
-  // AudioRenderer — 自行播放 PCM，跟随系统媒体音量
-  private ttsRenderer: audio.AudioRenderer | null = null;
-  // 累积 PCM 缓冲区
-  private ttsPcmBuffers: ArrayBuffer[] = [];
 
   // ====== ASR 引擎 ======
   private asrEngine: speechRecognizer.SpeechRecognitionEngine | null = null;
@@ -266,9 +262,9 @@ struct Index {
           console.info('======== TTS: onStart');
           this.sendToWebView('onTtsStart', '');
         },
-        onComplete: (): void => {
+        onComplete: () => {
           console.info('======== TTS: onComplete');
-          this.playTtsPcm();
+          this.sendToWebView('onTtsComplete', '');
         },
         onError: (_requestId: string, _errorCode: number, errorMessage: string) => {
           console.error('======== TTS error: ' + errorMessage);
@@ -279,7 +275,6 @@ struct Index {
           this.sendToWebView('onTtsStop', '');
         },
         onData: (requestId: string, audioData: ArrayBuffer): void => {
-          this.ttsPcmBuffers.push(audioData.slice(0));
           const now = Date.now();
           if (now - this.lastMouthTime < 16) return;
           this.lastMouthTime = now;
@@ -308,7 +303,6 @@ struct Index {
   private async destroyTtsEngine(): Promise<void> {
     if (!this.ttsEngine) return;
     try {
-      this.destroyTtsRenderer();
       await this.ttsEngine.shutdown();
       this.ttsEngine = null;
       this.ttsReady = false;
@@ -327,12 +321,11 @@ struct Index {
       return;
     }
     try {
-      this.ttsPcmBuffers = [];
       this.ttsEngine.speak(text, {
         requestId: 'tts_' + Date.now().toString(),
         extraParams: {
           speed: speed !== undefined ? speed : 1.0,
-          volume: 0, // 静音引擎，只通过 onData 获取 PCM
+          volume: 2,
           pitch: pitch !== undefined ? pitch : 1.0,
           queueMode: 0,
         }
@@ -345,8 +338,6 @@ struct Index {
   // TTS 停止（JS Bridge 调用，打断式）
   private ttsStop(): void {
     if (!this.ttsEngine) return;
-    this.destroyTtsRenderer();
-    this.ttsPcmBuffers = [];
     try {
       this.ttsEngine.speak(' ', {
         requestId: 'tts_interrupt_' + Date.now().toString(),
@@ -518,108 +509,6 @@ struct Index {
     } catch (e) {
       console.error('======== sendToWebView error: ' + JSON.stringify(e));
     }
-  }
-
-  // ============================================================
-  //  TTS AudioRenderer — 自行播放 PCM，跟随系统媒体音量
-  // ============================================================
-
-  private playTtsPcm(): void {
-    if (this.ttsPcmBuffers.length === 0) {
-      this.sendToWebView('onTtsComplete', '');
-      return;
-    }
-    try {
-      let totalLen: number = 0;
-      for (let i: number = 0; i < this.ttsPcmBuffers.length; i++) {
-        totalLen += this.ttsPcmBuffers[i].byteLength;
-      }
-      const merged: Int16Array = new Int16Array(totalLen / 2);
-      let offset: number = 0;
-      for (let i: number = 0; i < this.ttsPcmBuffers.length; i++) {
-        const view: Int16Array = new Int16Array(this.ttsPcmBuffers[i]);
-        for (let j: number = 0; j < view.length; j++) {
-          merged[offset++] = view[j];
-        }
-      }
-      this.ttsPcmBuffers = [];
-
-      this.destroyTtsRenderer();
-      this.playMergedPcm(merged.buffer as ArrayBuffer);
-    } catch (e) {
-      console.error('======== playTtsPcm failed: ' + JSON.stringify(e));
-      this.sendToWebView('onTtsComplete', '');
-    }
-  }
-
-  private playMergedPcm(totalBuf: ArrayBuffer): void {
-    const streamInfo: audio.AudioStreamInfo = {
-      samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_16000,
-      channels: audio.AudioChannel.CHANNEL_1,
-      sampleFormat: audio.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
-      encodingType: audio.AudioEncodingType.ENCODING_TYPE_RAW
-    };
-    const rendererInfo: audio.AudioRendererInfo = {
-      usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
-      rendererFlags: 0
-    };
-    const rendererOptions: audio.AudioRendererOptions = {
-      streamInfo: streamInfo,
-      rendererInfo: rendererInfo
-    };
-    audio.createAudioRenderer(rendererOptions).then(
-      (renderer: audio.AudioRenderer): void => {
-        this.ttsRenderer = renderer;
-        renderer.start();
-        this.writeAllChunks(0, totalBuf);
-      },
-      (err: BusinessError): void => {
-        console.error('======== TTS AudioRenderer create failed: ' + JSON.stringify(err));
-        this.sendToWebView('onTtsComplete', '');
-      }
-    );
-  }
-
-  private writeAllChunks(written: number, totalBuf: ArrayBuffer): void {
-    try {
-      const chunkSize: number = 4096;
-      const end: number = Math.min(written + chunkSize, totalBuf.byteLength);
-      const chunk: ArrayBuffer = totalBuf.slice(written, end);
-      this.ttsRenderer!.write(chunk, (err: BusinessError | null): void => {
-        if (err) {
-          console.error('======== TTS write error: ' + JSON.stringify(err));
-          this.sendToWebView('onTtsComplete', '');
-          return;
-        }
-        const nextWritten: number = end;
-        if (nextWritten >= totalBuf.byteLength) {
-          console.info('======== playTtsPcm done, total=' + totalBuf.byteLength + ' bytes');
-          this.sendToWebView('onTtsComplete', '');
-        } else {
-          setTimeout((): void => {
-            this.writeAllChunks(nextWritten, totalBuf);
-          }, 10);
-        }
-      });
-    } catch (e) {
-      console.error('======== TTS writeAllChunks error: ' + JSON.stringify(e));
-      this.sendToWebView('onTtsComplete', '');
-    }
-  }
-
-  private initTtsRenderer(): void {
-    // 空 — 在 playTtsPcm 中直接创建并播放
-  }
-
-  private destroyTtsRenderer(): void {
-    if (!this.ttsRenderer) return;
-    try {
-      this.ttsRenderer.stop();
-      this.ttsRenderer.release();
-    } catch (e) {
-      console.error('======== TTS AudioRenderer stop/release failed: ' + JSON.stringify(e));
-    }
-    this.ttsRenderer = null;
   }
 
   // ============================================================
