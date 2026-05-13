@@ -268,9 +268,8 @@ struct Index {
         },
         onComplete: () => {
           console.info('======== TTS: onComplete');
-          // 合成完成，用 AudioRenderer 播放全部 PCM 数据
+          // 合成完成，用 AudioRenderer 播放全部 PCM 数据（播放完成后才会发 onTtsComplete）
           this.playTtsPcm();
-          this.sendToWebView('onTtsComplete', '');
         },
         onError: (_requestId: string, _errorCode: number, errorMessage: string) => {
           console.error('======== TTS error: ' + errorMessage);
@@ -331,10 +330,9 @@ struct Index {
       this.ttsPcmBuffers = [];
       this.ttsEngine.speak(text, {
         requestId: 'tts_' + Date.now().toString(),
-        playType: 0, // 不自动播放，只回调 onData 返回 PCM 数据
         extraParams: {
           speed: speed !== undefined ? speed : 1.0,
-          volume: 2,
+          volume: 0, // 静音引擎自身播放，只通过 onData 获取 PCM 自行用 AudioRenderer 播放
           pitch: pitch !== undefined ? pitch : 1.0,
           queueMode: 0,
         }
@@ -347,20 +345,19 @@ struct Index {
   // 创建 AudioRenderer（PCM 16kHz 单声道 S16LE，跟随系统媒体音量）
   private async initTtsRenderer(): Promise<audio.AudioRenderer | null> {
     try {
-      const streamInfo: audio.AudioStreamInfo = {
-        samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_16000,
-        channels: audio.AudioChannel.CHANNEL_1,
-        sampleFormat: audio.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
-        encodingType: audio.AudioEncodingType.ENCODING_TYPE_RAW
+      const rendererOptions: audio.AudioRendererOptions = {
+        streamInfo: {
+          samplingRate: audio.AudioSamplingRate.SAMPLE_RATE_16000,
+          channels: audio.AudioChannel.CHANNEL_1,
+          sampleFormat: audio.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
+          encodingType: audio.AudioEncodingType.ENCODING_TYPE_RAW
+        },
+        rendererInfo: {
+          usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
+          rendererFlags: 0
+        }
       };
-      const rendererInfo: audio.AudioRendererInfo = {
-        usage: audio.StreamUsage.STREAM_USAGE_MUSIC,
-        rendererFlags: 0
-      };
-      const renderer: audio.AudioRenderer = await audio.createAudioRenderer({
-        streamInfo,
-        rendererInfo
-      });
+      const renderer: audio.AudioRenderer = await audio.createAudioRenderer(rendererOptions);
       await renderer.start();
       console.info('======== TTS AudioRenderer started (STREAM_USAGE_MUSIC)');
       return renderer;
@@ -449,9 +446,13 @@ struct Index {
       }
 
       console.info('======== playTtsPcm done, total=' + totalBuf.byteLength + ' bytes');
+      // 播放完成后通知 JS 端（防止气泡提前消失）
+      this.sendToWebView('onTtsComplete', '');
     } catch (e) {
       console.error('======== playTtsPcm failed: ' + JSON.stringify(e));
       this.destroyTtsRenderer();
+      // 播放失败也要通知 JS 端收尾
+      this.sendToWebView('onTtsComplete', '');
     }
   }
 
