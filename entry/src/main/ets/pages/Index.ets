@@ -501,8 +501,9 @@ struct Index {
       const js: string =
         `(function(){` +
         `  var b=window.__nativeBridge__||window.nativeBridge;` +
-        `  if(b&&typeof b._onNativeEvent==='function')` +
-        `    b._onNativeEvent('${msg}','${safeData}');` +
+        `  var handler=b&&typeof b._onNativeEvent==='function'?b._onNativeEvent:` +
+        `    typeof window._nativeEventHandler==='function'?window._nativeEventHandler:null;` +
+        `  if(handler)handler('${msg}','${safeData}');` +
         `})()`;
       this.controller.runJavaScript(js);
     } catch (e) {
