@@ -210,6 +210,29 @@
   #通话验证浮层 .验证步骤.进行中 { background: rgba(59,130,246,0.08); color: #60a5fa; }
   #通话验证浮层 .画布容器 { margin: 0 20px 24px; border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; aspect-ratio: 1; max-height: 280px; }
   #通话验证浮层 .画布容器 canvas { width: 100%; height: 100%; object-fit: contain; }
+
+  /* ===== 语音通话浮层（融合 Phase 1） ===== */
+  #语音通话浮层 { position: fixed; inset: 0; z-index: 99998; background: linear-gradient(180deg,#0a0e1a 0%,#101018 100%); display: none; flex-direction: column; }
+  #语音通话浮层.显示 { display: flex; }
+  #语音通话浮层 .通话头部 { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; padding-top: max(env(safe-area-inset-top, 0px), 16px); flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  #语音通话浮层 .通话角色信息 { display: flex; flex-direction: column; gap: 4px; }
+  #语音通话浮层 .通话角色名 { font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  #语音通话浮层 .通话状态 { font-size: 12px; color: rgba(255,255,255,0.45); }
+  #语音通话浮层 .挂断按钮 { width: 36px; height: 36px; border-radius: 50%; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  #语音通话浮层 .挂断按钮:active { background: rgba(239,68,68,0.25); }
+  #语音通话浮层 .通话画布区 { flex: 1; min-height: 0; margin: 12px 16px; border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.04); position: relative; }
+  #语音通话浮层 .通话画布区 canvas { width: 100%; height: 100%; object-fit: contain; }
+  #语音通话浮层 .通话对话区 { height: 120px; max-height: 25vh; overflow-y: auto; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.04); }
+  #语音通话浮层 .通话对话项 { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; line-height: 1.5; }
+  #语音通话浮层 .通话对话项.用户 { color: #60a5fa; }
+  #语音通话浮层 .通话对话项.AI { color: rgba(255,255,255,0.85); }
+  #语音通话浮层 .通话对话项 .说话人 { font-weight: 500; flex-shrink: 0; }
+  #语音通话浮层 .通话控制区 { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px 20px; padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px); border-top: 1px solid rgba(255,255,255,0.04); }
+  #语音通话浮层 .通话说话按钮 { flex: 1; max-width: 200px; height: 48px; border-radius: 24px; background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: white; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+  #语音通话浮层 .通话说话按钮:active { transform: scale(0.98); opacity: 0.9; }
+  #语音通话浮层 .通话说话按钮.录音中 { background: linear-gradient(135deg, #ef4444, #dc2626); }
+  #语音通话浮层 .通话模式切换 { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; }
+  #语音通话浮层 .通话模式切换.自动 { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); color: #4ade80; }
 </style>
 <div id="启动loading">
   <div class="star star1"></div><div class="star star2"></div><div class="star star3"></div>
@@ -628,6 +651,23 @@
     <div class="验证结果区" id="验证结果区"></div>
     <div class="画布容器" id="验证画布容器"></div>
   </div>
+
+  <!-- ===== 语音通话浮层（融合 Phase 1） ===== -->
+  <div id="语音通话浮层">
+    <div class="通话头部">
+      <div class="通话角色信息">
+        <span class="通话角色名" id="通话角色名">Haru</span>
+        <span class="通话状态" id="通话状态">等待连接...</span>
+      </div>
+      <button class="挂断按钮" id="挂断按钮">✖</button>
+    </div>
+    <div class="通话画布区" id="通话画布容器"></div>
+    <div class="通话对话区" id="通话对话列表"></div>
+    <div class="通话控制区">
+      <button class="通话说话按钮" id="通话说话按钮">按住说话</button>
+      <button class="通话模式切换" id="通话模式切换" title="自动对话">🔄</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -827,14 +867,295 @@
       关闭按钮.addEventListener('click', 隐藏验证);
     }
 
-    // "语"按钮 — 点击弹出验证浮层
+    // "语"按钮 — 点击进入语音通话模式
     var 语按钮 = document.getElementById('电话预留按钮');
     if (语按钮) {
       语按钮.title = '语音通话';
-      语按钮.addEventListener('click', 显示验证);
+      语按钮.addEventListener('click', function() {
+        // 检查当前智能体是否有关联 Live2D 角色
+        var 当前智能体 = window.获取当前智能体配置 ? window.获取当前智能体配置() : null;
+        var 角色ID = 当前智能体 && 当前智能体.live2dModelId ? 当前智能体.live2dModelId : null;
+        
+        if (!角色ID) {
+          // 未绑定角色，提示用户
+          if (window.显示提示) {
+            window.显示提示('请先为当前智能体选择 Live2D 角色（编辑智能体 → Live2D角色）');
+          } else {
+            alert('请先为当前智能体选择 Live2D 角色');
+          }
+          return;
+        }
+        
+        // 进入通话模式
+        if (window.进入通话模式) {
+          window.进入通话模式(角色ID);
+        } else {
+          console.error('[语音通话] 通话管理模块未加载');
+        }
+      });
     }
 
-    console.log('[通话验证] 模块就绪 — 点击"语"按钮开始验证');
+    console.log('[通话验证] 模块就绪 — 点击"语"按钮进入语音通话');
+  })();
+  </script>
+
+  <!-- ===== 语音通话模式脚本（融合 Phase 1） ===== -->
+  <script>
+  (function() {
+    'use strict';
+    
+    // 通话状态
+    var _通话中 = false;
+    var _当前角色ID = null;
+    var _pixiApp = null;
+    var _live2dModel = null;
+    var _自动模式 = false;
+    
+    // DOM 引用
+    var 通话浮层 = document.getElementById('语音通话浮层');
+    var 通话画布容器 = document.getElementById('通话画布容器');
+    var 通话角色名 = document.getElementById('通话角色名');
+    var 通话状态 = document.getElementById('通话状态');
+    var 通话对话列表 = document.getElementById('通话对话列表');
+    var 挂断按钮 = document.getElementById('挂断按钮');
+    var 说话按钮 = document.getElementById('通话说话按钮');
+    var 模式切换按钮 = document.getElementById('通话模式切换');
+    
+    // 角色配置（简化版，完整版在角色管理.js）
+    var 角色配置 = {
+      'haru': { name: 'Haru', displayName: '小春', greeting: '你好呀！我是 Haru，很高兴见到你~', modelPath: './Haru/Haru.model3.json' },
+      'mark': { name: 'Mark', displayName: '马克', greeting: '嘿！我是 Mark，来吧，想聊什么都可以！', modelPath: './Mark/Mark.model3.json' }
+    };
+    
+    /**
+     * 进入通话模式
+     * @param {string} 角色ID - 'haru' 或 'mark'
+     */
+    function 进入通话模式(角色ID) {
+      if (_通话中) return;
+      
+      var 配置 = 角色配置[角色ID];
+      if (!配置) {
+        console.error('[语音通话] 未知角色:', 角色ID);
+        return;
+      }
+      
+      _当前角色ID = 角色ID;
+      _通话中 = true;
+      
+      // 显示通话浮层
+      通话浮层.classList.add('显示');
+      document.body.style.overflow = 'hidden';
+      
+      // 更新角色信息
+      通话角色名.textContent = 配置.displayName;
+      通话状态.textContent = '连接中...';
+      
+      // 清空对话列表
+      通话对话列表.innerHTML = '';
+      
+      // 加载 Live2D 角色
+      加载角色(配置);
+    }
+    
+    /**
+     * 加载 Live2D 角色
+     */
+    async function 加载角色(配置) {
+      try {
+        通话状态.textContent = '加载角色...';
+        
+        // 清理旧实例
+        if (_pixiApp) {
+          try { _pixiApp.destroy(true, { children: true }); } catch(e) {}
+          _pixiApp = null;
+        }
+        _live2dModel = null;
+        通话画布容器.innerHTML = '';
+        
+        // 创建 canvas
+        var canvas = document.createElement('canvas');
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.display = 'block';
+        
+        // 获取容器尺寸
+        var rect = 通话画布容器.getBoundingClientRect();
+        var w = Math.max(rect.width, 300);
+        var h = Math.max(rect.height, 300);
+        
+        // 创建 PIXI Application
+        _pixiApp = new PIXI.Application({
+          view: canvas,
+          width: w,
+          height: h,
+          backgroundColor: 0x0a0a0f,
+          backgroundAlpha: 1,
+          antialias: true,
+          resolution: window.devicePixelRatio || 1,
+          autoDensity: true
+        });
+        
+        通话画布容器.appendChild(canvas);
+        
+        // 构建模型路径（file:// 协议兼容）
+        var modelUrl = 配置.modelPath;
+        if (location.protocol === 'file:') {
+          var base = location.href.substring(0, location.href.lastIndexOf('/'));
+          modelUrl = base + '/' + modelUrl.replace(/^\.\//, '');
+        }
+        
+        // 加载模型
+        _live2dModel = await Live2DModel.from(modelUrl);
+        _pixiApp.stage.addChild(_live2dModel);
+        
+        // 设置模型位置和缩放
+        var s = Math.min(w / (_live2dModel.width || 300), h / (_live2dModel.height || 500)) * 0.85;
+        _live2dModel.anchor.set(0.5, 1);
+        _live2dModel.scale.set(s);
+        _live2dModel.x = w / 2;
+        _live2dModel.y = h - 10;
+        
+        // 播放默认动作和表情
+        try { _live2dModel.motion('Idle'); } catch(e) {}
+        try { _live2dModel.expression('F01'); } catch(e) {}
+        
+        通话状态.textContent = '通话中';
+        
+        // 播报问候语
+        添加对话('AI', 配置.greeting);
+        播报TTS(配置.greeting);
+        
+        console.log('[语音通话] 角色加载成功:', 配置.name);
+        
+      } catch (err) {
+        console.error('[语音通话] 角色加载失败:', err);
+        通话状态.textContent = '角色加载失败';
+        添加对话('系统', '角色加载失败，请重试');
+      }
+    }
+    
+    /**
+     * 播报 TTS
+     */
+    function 播报TTS(文本) {
+      if (!window.__nativeBridge__ || !window.__nativeBridge__.ttsSpeak) {
+        console.warn('[语音通话] TTS 桥接不可用');
+        return;
+      }
+      try {
+        window.__nativeBridge__.ttsSpeak(文本);
+      } catch(e) {
+        console.error('[语音通话] TTS 调用失败:', e);
+      }
+    }
+    
+    /**
+     * 添加对话到列表
+     */
+    function 添加对话(角色, 文本) {
+      var item = document.createElement('div');
+      item.className = '通话对话项 ' + (角色 === '用户' ? '用户' : 'AI');
+      item.innerHTML = '<span class="说话人">' + (角色 === '用户' ? '你' : (角色 === '系统' ? '⚠️' : 通话角色名.textContent)) + ':</span><span>' + 文本 + '</span>';
+      通话对话列表.appendChild(item);
+      通话对话列表.scrollTop = 通话对话列表.scrollHeight;
+    }
+    
+    /**
+     * 挂断通话
+     */
+    function 挂断通话() {
+      if (!_通话中) return;
+      
+      _通话中 = false;
+      
+      // 停止 TTS
+      if (window.__nativeBridge__ && window.__nativeBridge__.ttsStop) {
+        try { window.__nativeBridge__.ttsStop(); } catch(e) {}
+      }
+      
+      // 销毁 PIXI
+      if (_pixiApp) {
+        try { _pixiApp.destroy(true, { children: true }); } catch(e) {}
+        _pixiApp = null;
+      }
+      _live2dModel = null;
+      
+      // 清空画布
+      通话画布容器.innerHTML = '';
+      
+      // 隐藏浮层
+      通话浮层.classList.remove('显示');
+      document.body.style.overflow = '';
+      
+      _当前角色ID = null;
+      console.log('[语音通话] 通话结束');
+    }
+    
+    /**
+     * 切换自动对话模式
+     */
+    function 切换自动模式() {
+      _自动模式 = !_自动模式;
+      模式切换按钮.classList.toggle('自动', _自动模式);
+      模式切换按钮.title = _自动模式 ? '自动对话: 开' : '自动对话: 关';
+      console.log('[语音通话] 自动模式:', _自动模式 ? '开' : '关');
+    }
+    
+    // 事件绑定
+    if (挂断按钮) {
+      挂断按钮.addEventListener('click', 挂断通话);
+    }
+    
+    if (模式切换按钮) {
+      模式切换按钮.addEventListener('click', 切换自动模式);
+    }
+    
+    // 说话按钮（按住录音）
+    if (说话按钮) {
+      说话按钮.addEventListener('pointerdown', function() {
+        if (!_通话中) return;
+        说话按钮.classList.add('录音中');
+        说话按钮.textContent = '录音中...';
+        通话状态.textContent = '聆听中...';
+        
+        // 开始 ASR
+        if (window.__nativeBridge__ && window.__nativeBridge__.startAsr) {
+          try { window.__nativeBridge__.startAsr(); } catch(e) {}
+        }
+      });
+      
+      说话按钮.addEventListener('pointerup', function() {
+        if (!_通话中) return;
+        说话按钮.classList.remove('录音中');
+        说话按钮.textContent = '按住说话';
+        通话状态.textContent = '通话中';
+        
+        // 停止 ASR
+        if (window.__nativeBridge__ && window.__nativeBridge__.stopAsr) {
+          try { window.__nativeBridge__.stopAsr(); } catch(e) {}
+        }
+      });
+      
+      说话按钮.addEventListener('pointerleave', function() {
+        if (!_通话中 || !说话按钮.classList.contains('录音中')) return;
+        说话按钮.classList.remove('录音中');
+        说话按钮.textContent = '按住说话';
+        通话状态.textContent = '通话中';
+        
+        if (window.__nativeBridge__ && window.__nativeBridge__.stopAsr) {
+          try { window.__nativeBridge__.stopAsr(); } catch(e) {}
+        }
+      });
+    }
+    
+    // 暴露全局方法
+    window.进入通话模式 = 进入通话模式;
+    window.挂断通话 = 挂断通话;
+    window.添加通话对话 = 添加对话;
+    window.播报通话TTS = 播报TTS;
+    
+    console.log('[语音通话] Phase 1 模块就绪');
   })();
   </script>
 </body>
