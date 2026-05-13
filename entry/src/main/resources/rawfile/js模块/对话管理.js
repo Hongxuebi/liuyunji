@@ -795,13 +795,11 @@ async function 发送消息(用户输入) {
       }
     }
 
-    // ===== 语音通话模式：AI 回复播报 TTS =====
+    // ===== 非流式分支：AI 回复播报 TTS =====
     if (AI回复 && typeof AI回复 === 'string') {
-      // 检查是否处于通话模式
       if (window.播报通话TTS) {
         window.播报通话TTS(AI回复);
       }
-      // 同时添加到通话对话列表
       if (window.添加通话对话) {
         window.添加通话对话('AI', AI回复);
       }
