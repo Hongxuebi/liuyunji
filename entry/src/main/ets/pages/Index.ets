@@ -381,6 +381,25 @@ struct Index {
     this.ttsRenderer = null;
   }
 
+  // 写入 PCM 块到 AudioRenderer（避免箭头函数字面量触犯 arkts-no-structural-typing）
+  private ttsWriteChunk(buf: ArrayBuffer): Promise<void> {
+    return new Promise<void>((resolve: Function, reject: Function) => {
+      try {
+        this.ttsRenderer!.write(buf, (err: BusinessError | null) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      } catch (e) { reject(e); }
+    });
+  }
+
+  // 等待指定毫秒（避免箭头函数字面量）
+  private sleep(ms: number): Promise<void> {
+    return new Promise<void>((resolve: Function) => {
+      setTimeout(() => { resolve(); }, ms);
+    });
+  }
+
   // TTS 停止（JS Bridge 调用，打断式）
   private ttsStop(): void {
     if (!this.ttsEngine) return;
@@ -423,27 +442,17 @@ struct Index {
 
       const totalBuf: ArrayBuffer = merged.buffer;
       let written = 0;
-      const write = (buf: ArrayBuffer): Promise<void> => {
-        return new Promise((resolve, reject) => {
-          try {
-            this.ttsRenderer!.write(buf, (err: BusinessError | null) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          } catch (e) { reject(e); }
-        });
-      };
 
       // 分块写入（每次 4096 字节）
       const chunkSize = 4096;
       while (written < totalBuf.byteLength) {
         const end = Math.min(written + chunkSize, totalBuf.byteLength);
         const chunk = totalBuf.slice(written, end);
-        await write(chunk);
+        await this.ttsWriteChunk(chunk);
         written = end;
         // 给系统一点缓冲时间
         if (written < totalBuf.byteLength) {
-          await new Promise<void>(r => setTimeout(r, 10));
+          await this.sleep(10);
         }
       }
 
