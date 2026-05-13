@@ -406,8 +406,11 @@ struct Index {
     }
     if (this.isListening) return;
 
+    this.isListening = true;
+    this.isStopping = false;
+    this.asrSessionId = 'asr_' + Date.now().toString();
+
     try {
-      this.asrSessionId = 'asr_' + Date.now().toString();
       this.asrEngine.startListening({
         sessionId: this.asrSessionId,
         audioInfo: {
