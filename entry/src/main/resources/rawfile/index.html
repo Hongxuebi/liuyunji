@@ -196,21 +196,6 @@
   #启动loading .star3 { top:60%; left:85%; animation:twinkle 3.5s ease-in-out 0.5s infinite; }
   @keyframes twinkle { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:0.8;transform:scale(1.5)} }
 
-  /* ===== 通话验证浮层（融合 Phase 0，保留不动） ===== */
-  #通话验证浮层 { position: fixed; inset: 0; z-index: 99999; background: linear-gradient(180deg,#0a0e1a 0%,#101018 100%); display: none; flex-direction: column; }
-  #通话验证浮层.显示 { display: flex; }
-  #通话验证浮层 .验证头部 { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; padding-top: max(env(safe-area-inset-top, 0px), 16px); flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-  #通话验证浮层 .验证头部 .标题 { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.85); }
-  #通话验证浮层 .关闭验证按钮 { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  #通话验证浮层 .关闭验证按钮:active { background: rgba(255,255,255,0.12); }
-  #通话验证浮层 .验证结果区 { flex: 1; overflow-y: auto; padding: 16px 20px; }
-  #通话验证浮层 .验证步骤 { padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; font-size: 13px; line-height: 1.5; background: rgba(255,255,255,0.025); color: rgba(255,255,255,0.4); transition: all 0.25s ease; }
-  #通话验证浮层 .验证步骤.通过 { background: rgba(34,197,94,0.08); color: #4ade80; }
-  #通话验证浮层 .验证步骤.失败 { background: rgba(239,68,68,0.08); color: #f87171; }
-  #通话验证浮层 .验证步骤.进行中 { background: rgba(59,130,246,0.08); color: #60a5fa; }
-  #通话验证浮层 .画布容器 { margin: 0 20px 24px; border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; aspect-ratio: 1; max-height: 280px; }
-  #通话验证浮层 .画布容器 canvas { width: 100%; height: 100%; object-fit: contain; }
-
     
 /* 流云记适配：语音通话浮层 = call-container */
 #语音通话浮层 { width:100%; height:100vh; display:flex; flex-direction:column; position:relative; overflow:hidden; }
@@ -783,15 +768,6 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
   <!-- 隐藏的文件选择框 -->
   <input type="file" id="头像文件选择" accept="image/*" style="display: none;">
 
-  <!-- ===== 通话验证浮层（融合 Phase 0） ===== -->
-  <div id="通话验证浮层">
-    <div class="验证头部">
-      <span class="标题">🔬 语音通话环境验证</span>
-      <button class="关闭验证按钮" id="关闭验证浮层">✖</button>
-    </div>
-    <div class="验证结果区" id="验证结果区"></div>
-    <div class="画布容器" id="验证画布容器"></div>
-  </div>
 
     <!-- ===== 语音通话浮层（豆包原版完整搬入） ===== -->
 <div id="语音通话浮层" style="display:none">
@@ -903,6 +879,8 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
     </div>
   </div>
 
+  
+
   <div class="input-panel" id="inputPanel">
     <div class="input-panel-box">
       <input type="text" class="input-panel-input" id="keyboardInput" placeholder="输入你想说的话..." autocomplete="off">
@@ -965,186 +943,6 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
 
   <!-- ===== 通话验证脚本（融合 Phase 0：点击"语"按钮 → 逐项验证 PixiJS / Live2D / 模型） ===== -->
   <script>
-  (function() {
-    'use strict';
-    var 验证浮层 = document.getElementById('通话验证浮层');
-    var 验证结果区 = document.getElementById('验证结果区');
-    var 画布容器 = document.getElementById('验证画布容器');
-    var 关闭按钮 = document.getElementById('关闭验证浮层');
-
-    var _验证通过 = false;
-    var _pixiApp = null;
-    var _live2dModel = null;
-
-    function 添加验证步骤(text, status) {
-      var div = document.createElement('div');
-      div.className = '验证步骤 ' + (status === 'pass' ? '通过' : status === 'fail' ? '失败' : '进行中');
-      div.textContent = (status === 'pass' ? '✅ ' : status === 'fail' ? '❌ ' : '⏳ ') + text;
-      验证结果区.appendChild(div);
-      验证结果区.scrollTop = 验证结果区.scrollHeight;
-    }
-
-    async function 运行验证() {
-      验证结果区.innerHTML = '';
-      _验证通过 = false;
-
-      // Step 1 — PIXI
-      添加验证步骤('检查 PixiJS 运行时...', 'loading');
-      await new Promise(function(r) { setTimeout(r, 200); });
-      if (typeof PIXI === 'undefined') {
-        验证结果区.lastChild.className = '验证步骤 失败';
-        验证结果区.lastChild.textContent = '❌ PIXI 未加载 — l2d.bundle.js 可能缺失或加载失败';
-        return false;
-      }
-      验证结果区.lastChild.className = '验证步骤 通过';
-      验证结果区.lastChild.textContent = '✅ PIXI v' + (PIXI.VERSION || '?') + ' 已加载';
-
-      // Step 2 — Live2DModel
-      添加验证步骤('检查 Live2DModel...', 'loading');
-      await new Promise(function(r) { setTimeout(r, 200); });
-      if (typeof Live2DModel === 'undefined') {
-        验证结果区.lastChild.className = '验证步骤 失败';
-        验证结果区.lastChild.textContent = '❌ Live2DModel 未加载';
-        return false;
-      }
-      验证结果区.lastChild.className = '验证步骤 通过';
-      验证结果区.lastChild.textContent = '✅ Live2DModel 已加载';
-
-      // Step 3 — CubismCore
-      添加验证步骤('检查 CubismCore...', 'loading');
-      await new Promise(function(r) { setTimeout(r, 200); });
-      if (typeof Live2DCubismCore !== 'undefined') {
-        验证结果区.lastChild.className = '验证步骤 通过';
-        验证结果区.lastChild.textContent = '✅ Live2DCubismCore 已加载';
-      } else {
-        验证结果区.lastChild.className = '验证步骤 失败';
-        验证结果区.lastChild.textContent = '❌ Live2DCubismCore 未加载 — live2dcubismcore.min.js 可能缺失';
-        return false;
-      }
-
-      // Step 4 — 创建 PIXI.Application
-      添加验证步骤('创建 PIXI 画布...', 'loading');
-      await new Promise(function(r) { setTimeout(r, 200); });
-      try {
-        var canvas = document.createElement('canvas');
-        _pixiApp = new PIXI.Application({
-          view: canvas,
-          width: 400,
-          height: 400,
-          backgroundColor: 0x1a1a2e,
-          antialias: true,
-          resolution: window.devicePixelRatio || 1,
-          autoDensity: true
-        });
-        画布容器.innerHTML = '';
-        画布容器.appendChild(canvas);
-        验证结果区.lastChild.className = '验证步骤 通过';
-        验证结果区.lastChild.textContent = '✅ PIXI.Application 创建成功 (' + canvas.width + '×' + canvas.height + ')';
-      } catch(e) {
-        验证结果区.lastChild.className = '验证步骤 失败';
-        验证结果区.lastChild.textContent = '❌ PIXI.Application 创建失败: ' + (e.message || e);
-        return false;
-      }
-
-      // Step 5 — 加载 Haru 模型（file:// 协议下构建绝对路径，鸿蒙兼容）
-      添加验证步骤('加载 Haru 模型...', 'loading');
-      await new Promise(function(r) { setTimeout(r, 200); });
-      try {
-        var modelUrl = './Haru/Haru.model3.json';
-        if (location.protocol === 'file:') {
-          var base = location.href.substring(0, location.href.lastIndexOf('/'));
-          modelUrl = base + '/' + modelUrl.replace(/^\.\//, '');
-        }
-        console.log('[通话验证] 协议:', location.protocol, '模型路径:', modelUrl);
-
-        _live2dModel = await Live2DModel.from(modelUrl);
-        _pixiApp.stage.addChild(_live2dModel);
-        _live2dModel.anchor.set(0.5, 1);
-        _live2dModel.scale.set(0.38);
-        _live2dModel.x = 200;
-        _live2dModel.y = 380;
-
-        验证结果区.lastChild.className = '验证步骤 通过';
-        验证结果区.lastChild.textContent = '✅ Haru 模型加载成功';
-      } catch(e) {
-        验证结果区.lastChild.className = '验证步骤 失败';
-        验证结果区.lastChild.textContent = '❌ 模型加载失败: ' + (e.message || e);
-        return false;
-      }
-
-      // Step 6 — 表情测试
-      添加验证步骤('测试表情切换...', 'loading');
-      await new Promise(function(r) { setTimeout(r, 200); });
-      try {
-        _live2dModel.expression('F01');
-        验证结果区.lastChild.className = '验证步骤 通过';
-        验证结果区.lastChild.textContent = '✅ 表情 F01 设置成功（微笑）';
-
-        // 额外检查：动作列表
-        if (_live2dModel.internalModel && _live2dModel.internalModel.motionManager) {
-          var motions = Object.keys(_live2dModel.internalModel.motionManager._animations || {});
-          if (motions.length > 0) {
-            添加验证步骤('检测到 ' + motions.length + ' 个可用动作', 'pass');
-          }
-        }
-      } catch(e) {
-        验证结果区.lastChild.className = '验证步骤 失败';
-        验证结果区.lastChild.textContent = '❌ 表情切换失败: ' + (e.message || e);
-        return false;
-      }
-
-      // 全部通过
-      添加验证步骤('🎉 验证完成！运行环境就绪，可进入通话模式', 'pass');
-      _验证通过 = true;
-      console.log('[通话验证] ✅ 全部通过');
-      return true;
-    }
-
-    function 显示验证() {
-      if (!验证浮层) return;
-      验证浮层.classList.add('显示');
-      document.body.style.overflow = 'hidden';
-      运行验证();
-    }
-
-    function 隐藏验证() {
-      if (_pixiApp) {
-        try { _pixiApp.destroy(true, { children: true }); } catch(e) {}
-        _pixiApp = null;
-      }
-      _live2dModel = null;
-      画布容器 && (画布容器.innerHTML = '');
-      if (验证浮层) {
-        验证浮层.classList.remove('显示');
-        document.body.style.overflow = '';
-      }
-    }
-
-    // 关闭按钮
-    if (关闭按钮) {
-      关闭按钮.addEventListener('click', 隐藏验证);
-    }
-
-    // "语"按钮 — 点击进入语音通话模式
-    var 语按钮 = document.getElementById('电话预留按钮');
-    if (语按钮) {
-      语按钮.title = '语音通话';
-      语按钮.addEventListener('click', function() {
-        // 检查当前智能体是否有关联 Live2D 角色，未绑定则默认 Haru
-        var 当前智能体 = window.获取当前智能体配置 ? window.获取当前智能体配置() : null;
-        var 角色ID = 当前智能体 && 当前智能体.live2dModelId ? 当前智能体.live2dModelId : 'haru';
-        
-        // 进入通话模式
-        if (window.进入通话模式) {
-          window.进入通话模式(角色ID);
-        } else {
-          console.error('[语音通话] 通话管理模块未加载');
-        }
-      });
-    }
-
-    console.log('[通话验证] 模块就绪 — 点击"语"按钮进入语音通话');
-  })();
   </script>
 
   <!-- ===== 语音通话模式脚本（融合 Phase 1） ===== -->
@@ -1773,7 +1571,8 @@ function _returnToVerification() {
     $('micWaveBars').classList.remove('active');
   }
   document.getElementById('语音通话浮层').style.display = 'none';
-  document.getElementById('通话验证浮层').style.display = 'flex';
+  var vf = document.getElementById('通话验证浮层');
+  if (vf) vf.style.display = 'none';
 }
 
 function removeModel() {
@@ -3756,7 +3555,8 @@ var _rattanMotions = [
 // ================================================================
 window.进入通话模式 = function(charId) {
   // 先显示通话浮层（loadModel 需要容器可见才能获取正确尺寸）
-  document.getElementById('通话验证浮层').style.display = 'none';
+  var vf = document.getElementById('通话验证浮层');
+  if (vf) vf.style.display = 'none';
   document.getElementById('语音通话浮层').style.display = 'flex';
   
   // 延迟一帧让浏览器完成布局，再加载模型
@@ -3789,7 +3589,8 @@ window.挂断通话 = function() {
     setMouth && setMouth(0);
   }
   document.getElementById('语音通话浮层').style.display = 'none';
-  document.getElementById('通话验证浮层').style.display = 'flex';
+  var vf = document.getElementById('通话验证浮层');
+  if (vf) vf.style.display = 'none';
 };
 
 window.添加通话对话 = function(role, text) {
