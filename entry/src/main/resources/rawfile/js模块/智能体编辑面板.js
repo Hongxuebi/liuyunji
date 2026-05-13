@@ -493,7 +493,12 @@ async function 渲染智能体详情(智能体ID, 配置) {
         <select class="智能体编辑-角色下拉" data-field="live2dModelId" style="background:transparent;border:none;color:inherit;font-size:inherit;width:100%;cursor:pointer;">
           <option value="" ${!当前角色ID ? 'selected' : ''}>无角色</option>
           <option value="haru" ${当前角色ID === 'haru' ? 'selected' : ''}>Haru (小春)</option>
+          <option value="hiyori" ${当前角色ID === 'hiyori' ? 'selected' : ''}>Hiyori (知性学姐)</option>
           <option value="mark" ${当前角色ID === 'mark' ? 'selected' : ''}>Mark (马克)</option>
+          <option value="natori" ${当前角色ID === 'natori' ? 'selected' : ''}>Natori (神秘少女)</option>
+          <option value="mao" ${当前角色ID === 'mao' ? 'selected' : ''}>Mao (魔法使)</option>
+          <option value="gothic" ${当前角色ID === 'gothic' ? 'selected' : ''}>哥特少女 (优雅少女)</option>
+          <option value="rattan" ${当前角色ID === 'rattan' ? 'selected' : ''}>白藤 (神秘清冷)</option>
         </select>
       </div>
       <div style="font-size:0.7rem;color:var(--文字辅色);margin-top:4px;">选择角色后，点击"语"按钮可进行语音通话</div>
