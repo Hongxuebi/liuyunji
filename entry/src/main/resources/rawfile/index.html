@@ -383,6 +383,8 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
   <div class="splash-couplet">流云过眼，万象皆成笔下记<br>片语关心，千山难隔耳边音</div>
 </div>
 
+header.顶部栏 { display:flex; }
+
 <div id="应用容器">
   <!-- 顶部栏 -->
   <header class="顶部栏">
@@ -3762,7 +3764,7 @@ var _rattanMotions = [
 window.进入通话模式 = function(charId) {
   // 隐藏顶部栏
   var header = document.querySelector('header.顶部栏');
-  if (header) { header.dataset.savedDisplay = header.style.display; header.style.display = 'none'; }
+  if (header) { header.style.display = 'none'; }
   // 先显示通话浮层（loadModel 需要容器可见才能获取正确尺寸）
   // 流云记无验证浮层 DOM
   document.getElementById('语音通话浮层').style.display = 'flex';
@@ -3799,7 +3801,7 @@ window.挂断通话 = function() {
   document.getElementById('语音通话浮层').style.display = 'none';
   // 恢复通话前 UI 状态
   var header = document.querySelector('header.顶部栏');
-  if (header) { header.style.display = header.dataset.savedDisplay || ''; delete header.dataset.savedDisplay; }
+  if (header) { header.style.display = 'flex'; }
   // 流云记无验证浮层 DOM
 };
 
