@@ -88,3 +88,15 @@ this.isStopping = false;
 ### 智能体编辑面板 TTS 语音参数（同步 love-helper v7.2.9）
 - 智能体编辑面板.js + 智能体编辑面板-样式.css: 同步 TTS 音调/语速滑块
 - index.html: aiSpeak 优先从智能体配置读 ttsPitch/ttsSpeed
+
+## v0.9.29 (2026-05-14)
+- 动作指令增强：中文标签+白藤专属表情+持久表情+参考时长
+- `_charActionMap` 重构：白藤新增16个专属表情/配件（expr类型），其他角色删冗余tags字段
+- `_getCharActionTags()` 改为动态生成带中文描述格式（如 `[emo:happy] 开心弹跳`）
+- 新增 `_findActionDesc()` 辅助函数（查标签对应的动作描述含persist元信息）
+- `_execActionDesc` 支持 `desc.expr` → `_setExpressionWithReset()`（白藤参数化表情）
+- 新增 `_persistentActions` + `_clearPersistentActions`：持久表情机制
+- `callDeepSeek` 开头先清持久表情再 stopAllAiMotions
+- `aiSpeak` 解析标记时记录 persist 信息，持久动作加入 `_persistentActions`
+- 系统提示词注入格式更新（getPatchedSystemPrompt + 获取系统提示词）：加规则说明（持续/时长/频率限制）
+- 对话管理.js 同步更新注入格式
