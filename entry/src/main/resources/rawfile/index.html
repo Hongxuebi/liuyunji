@@ -3722,10 +3722,10 @@ var _rattanMotions = [
           return true;
       }
     }
-    // 白藤参数化表情(expr 类型)
-    if (desc.expr) {
+    // 白藤专属：参数化表情（通过 _rattanExprMap + beforeModelUpdate hook）
+    if (desc.expr && typeof _setExpressionWithReset === 'function') {
       console.log('[' + type + '] expr:', tag, '->', desc.expr, '(' + desc.label + ')');
-      _playExprByType(desc.expr, desc.label);
+      _setExpressionWithReset(desc.expr);
       return true;
     }
     return false;
